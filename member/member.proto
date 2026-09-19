@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package pb;
+option go_package="./pb";
+
+service Member {
+  rpc MemberInfo(MemberInfoRequest) returns (MemberInfoResponse);
+  rpc UpgradeMember(UpgradeMemberRequest) returns (UpgradeMemberResponse);
+  rpc CheckMemberRight(CheckMemberRightRequest) returns (CheckMemberRightResponse);
+  rpc MemberOrderList(MemberOrderListRequest) returns (MemberOrderListResponse);
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
+  rpc PayCallback(PayCallbackRequest) returns (PayCallbackResponse);
+}
+
+message MemberInfoRequest {
+  int64 userId = 1;
+}
+
+message MemberInfoResponse {
+  int64 userId = 1;
+  int32 level = 2;
+  string levelName = 3;
+  int64 expireTime = 4;
+  int32 status = 5;
+}
+
+message UpgradeMemberRequest {
+  int64 userId = 1;
+  int32 level = 2;
+  int32 durationDays = 3;
+  string transactionId = 4;
+  int64 amount = 5;
+  string payChannel = 6;
+}
+
+message UpgradeMemberResponse {}
+
+message CheckMemberRightRequest {
+  int64 userId = 1;
+  string rightKey = 2;
+}
+
+message CheckMemberRightResponse {
+  bool hasRight = 1;
+  int32 level = 2;
+}
+
+message MemberOrderListRequest {
+  int64 userId = 1;
+  int64 cursor = 2;
+  int64 pageSize = 3;
+}
+
+message MemberOrderListResponse {
+  repeated MemberOrderItem items = 1;
+  int64 cursor = 2;
+  bool isEnd = 3;
+}
+
+message MemberOrderItem {
+  int64 id = 1;
+  int64 userId = 2;
+  int32 level = 3;
+  int32 durationDays = 4;
+  int64 amount = 5;
+  string payChannel = 6;
+  int32 status = 7;
+  int64 createTime = 8;
+}
+
+message CreateOrderRequest {
+  int64 userId = 1;
+  int32 level = 2;
+  int32 durationDays = 3;
+  int64 amount = 4;
+  string payChannel = 5;
+}
+
+message CreateOrderResponse {
+  string orderSn = 1;
+  int64 amount = 2;
+}
+
+message PayCallbackRequest {
+  string orderSn = 1;
+  string transactionId = 2;
+}
+
+message PayCallbackResponse {}

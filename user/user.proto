@@ -1,0 +1,108 @@
+syntax = "proto3";
+
+package service;
+option go_package="./service";
+
+service User {
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc FindById(FindByIdRequest) returns (FindByIdResponse);
+  rpc FindByMobile(FindByMobileRequest) returns (FindByMobileResponse);
+  rpc SendSms(SendSmsRequest) returns (SendSmsResponse);
+  rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse);
+  rpc UpgradePassword(UpgradePasswordRequest) returns (UpgradePasswordResponse);
+  rpc AdminUserList(AdminUserListRequest) returns (AdminUserListResponse);
+}
+
+
+message RegisterRequest {
+  string username = 1;
+  string mobile = 2;
+  string avatar = 3;
+  string password = 4;
+}
+
+message RegisterResponse {
+  int64 userId = 1;
+}
+
+message FindByIdRequest {
+  int64 userId = 1;
+}
+
+message FindByIdResponse {
+  int64 userId = 1;
+  string username = 2;
+  string mobile = 3;
+  string avatar = 4;
+  int64 role = 5;
+  string displayId = 6;
+  string bio = 7;
+  int32 gender = 8;
+  string profileCover = 9;
+}
+
+message FindByMobileRequest {
+  string mobile = 1;
+}
+
+message FindByMobileResponse {
+  int64 userId = 1;
+  string username = 2;
+  string mobile = 3;
+  string avatar = 4;
+  string password = 5;
+  int64 role = 6;
+}
+
+message SendSmsRequest {
+  int64 userId = 1;
+  string mobile = 2;
+}
+
+message SendSmsResponse {
+}
+
+message UpdateProfileRequest {
+  int64 userId = 1;
+  string username = 2;
+  string avatar = 3;
+  string bio = 4;
+  int32 gender = 5;
+  string profileCover = 6;
+}
+
+message UpdateProfileResponse {
+}
+
+message UpgradePasswordRequest {
+  int64 userId = 1;
+  string passwordHash = 2;
+}
+
+message UpgradePasswordResponse {
+}
+
+message AdminUserListRequest {
+  string keyword = 1;
+  int64 cursor = 2;
+  int64 pageSize = 3;
+}
+
+message AdminUserItem {
+  int64 userId = 1;
+  string username = 2;
+  string mobile = 3;
+  string avatar = 4;
+  int64 role = 5;
+  string displayId = 6;
+  string bio = 7;
+  int32 gender = 8;
+  string profileCover = 9;
+  int64 createTime = 10;
+}
+
+message AdminUserListResponse {
+  repeated AdminUserItem items = 1;
+  int64 cursor = 2;
+  bool isEnd = 3;
+}
