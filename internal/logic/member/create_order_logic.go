@@ -51,7 +51,12 @@ func generateOrderSn() string {
 	return fmt.Sprintf("MEMBER_%s%08d", time.Now().Format("20060102150405"), n.Int64())
 }
 
-func (l *CreateOrderLogic) CreateOrder(in *user.CreateOrderRequest) (*user.CreateOrderResponse, error) {
+func (l *CreateOrderLogic) CreateOrder(in *user.CreateOrderRequest) (resp *user.CreateOrderResponse, err error) {
+	resp = new(user.CreateOrderResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = new(user.CreateOrderData)
+
 	if in.UserId <= 0 {
 		return nil, code.MemberUserIdEmpty
 	}
@@ -116,18 +121,14 @@ func (l *CreateOrderLogic) CreateOrder(in *user.CreateOrderRequest) (*user.Creat
 		UpdateTime:    now,
 	}
 
-	err := l.svcCtx.MemberOrderModel.Insert(l.ctx, order)
+	err = l.svcCtx.MemberOrderModel.Insert(l.ctx, order)
 	if err != nil {
 		l.Errorf("[CreateOrder] Insert member_order error: %v, order_sn: %s", err, orderSn)
 		return nil, err
 	}
 
-	return &user.CreateOrderResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: &user.CreateOrderData{
-			OrderSn: orderSn,
-			Amount:  finalAmount,
-		},
-	}, nil
+	resp.Data.OrderSn = orderSn
+	resp.Data.Amount = finalAmount
+
+	return resp, nil
 }

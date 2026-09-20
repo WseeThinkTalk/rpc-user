@@ -29,7 +29,11 @@ func NewPayCallbackLogic(ctx context.Context, svcCtx *svc.ServiceContext) *PayCa
 	}
 }
 
-func (l *PayCallbackLogic) PayCallback(in *user.PayCallbackRequest) (*user.PayCallbackResponse, error) {
+func (l *PayCallbackLogic) PayCallback(in *user.PayCallbackRequest) (resp *user.PayCallbackResponse, err error) {
+	resp = new(user.PayCallbackResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+
 	if in.OrderSn == "" {
 		return nil, code.OrderSnEmpty
 	}
@@ -48,7 +52,7 @@ func (l *PayCallbackLogic) PayCallback(in *user.PayCallbackRequest) (*user.PayCa
 
 	if order.Status == types.OrderStatusPaid {
 		l.Infof("[PayCallback] order already paid, orderSn: %s, transactionId: %s", in.OrderSn, in.TransactionId)
-		return &user.PayCallbackResponse{Code: 200, Msg: "success"}, nil
+		return resp, nil
 	}
 
 	now := time.Now()
@@ -86,8 +90,5 @@ func (l *PayCallbackLogic) PayCallback(in *user.PayCallbackRequest) (*user.PayCa
 		return nil, code.PaymentFailed
 	}
 
-	return &user.PayCallbackResponse{
-		Code: 200,
-		Msg:  "success",
-	}, nil
+	return resp, nil
 }

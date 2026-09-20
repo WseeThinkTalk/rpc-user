@@ -32,7 +32,11 @@ func NewFollowLogic(ctx context.Context, svcCtx *svc.ServiceContext) *FollowLogi
 	}
 }
 
-func (l *FollowLogic) Follow(in *user.FollowRequest) (*user.FollowResponse, error) {
+func (l *FollowLogic) Follow(in *user.FollowRequest) (resp *user.FollowResponse, err error) {
+	resp = new(user.FollowResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+
 	if in.UserId == 0 {
 		return nil, code.FollowUserIdEmpty
 	}
@@ -48,7 +52,7 @@ func (l *FollowLogic) Follow(in *user.FollowRequest) (*user.FollowResponse, erro
 		return nil, err
 	}
 	if follow != nil && follow.FollowStatus == types.FollowStatusFollow {
-		return &user.FollowResponse{Code: 200, Msg: "success"}, nil
+		return resp, nil
 	}
 
 	err = l.svcCtx.DB.Transaction(func(tx *gorm.DB) error {
@@ -132,7 +136,7 @@ func (l *FollowLogic) Follow(in *user.FollowRequest) (*user.FollowResponse, erro
 		}
 	})
 
-	return &user.FollowResponse{Code: 200, Msg: "success"}, nil
+	return resp, nil
 }
 
 func userFollowKey(userId int64) string {

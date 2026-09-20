@@ -28,7 +28,11 @@ func NewUnFollowLogic(ctx context.Context, svcCtx *svc.ServiceContext) *UnFollow
 	}
 }
 
-func (l *UnFollowLogic) UnFollow(in *user.UnFollowRequest) (*user.UnFollowResponse, error) {
+func (l *UnFollowLogic) UnFollow(in *user.UnFollowRequest) (resp *user.UnFollowResponse, err error) {
+	resp = new(user.UnFollowResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+
 	if in.UserId == 0 {
 		return nil, code.FollowUserIdEmpty
 	}
@@ -42,7 +46,7 @@ func (l *UnFollowLogic) UnFollow(in *user.UnFollowRequest) (*user.UnFollowRespon
 		return nil, err
 	}
 	if follow == nil || follow.FollowStatus == types.FollowStatusUnfollow {
-		return &user.UnFollowResponse{Code: 200, Msg: "success"}, nil
+		return resp, nil
 	}
 
 	err = l.svcCtx.DB.Transaction(func(tx *gorm.DB) error {
@@ -88,5 +92,5 @@ func (l *UnFollowLogic) UnFollow(in *user.UnFollowRequest) (*user.UnFollowRespon
 		}
 	}
 
-	return &user.UnFollowResponse{Code: 200, Msg: "success"}, nil
+	return resp, nil
 }

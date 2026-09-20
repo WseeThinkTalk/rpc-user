@@ -31,7 +31,13 @@ func NewFansListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *FansList
 	}
 }
 
-func (l *FansListLogic) FansList(in *user.FansListRequest) (*user.FansListResponse, error) {
+func (l *FansListLogic) FansList(in *user.FansListRequest) (resp *user.FansListResponse, err error) {
+	resp = new(user.FansListResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = new(user.FansListData)
+	resp.Data.Items = make([]*user.FansItem, 0)
+
 	if in.UserId == 0 {
 		return nil, code.UserIdEmpty
 	}
@@ -42,7 +48,6 @@ func (l *FansListLogic) FansList(in *user.FansListRequest) (*user.FansListRespon
 		in.Cursor = time.Now().Unix()
 	}
 	var (
-		err            error
 		isCache, isEnd bool
 		lastId, cursor int64
 		fansUserIds    []int64
@@ -57,11 +62,7 @@ func (l *FansListLogic) FansList(in *user.FansListRequest) (*user.FansListRespon
 			isEnd = true
 		}
 		if len(fansUIds) == 0 {
-			return &user.FansListResponse{
-				Code: 200,
-				Msg:  "success",
-				Data: &user.FansListData{},
-			}, nil
+			return resp, nil
 		}
 		fansModel, err = l.svcCtx.FollowModel.FindByUserIds(l.ctx, in.UserId, fansUIds)
 		if err != nil {
@@ -90,11 +91,7 @@ func (l *FansListLogic) FansList(in *user.FansListRequest) (*user.FansListRespon
 			return nil, err
 		}
 		if len(fansModel) == 0 {
-			return &user.FansListResponse{
-				Code: 200,
-				Msg:  "success",
-				Data: &user.FansListData{},
-			}, nil
+			return resp, nil
 		}
 		var firstPageFans []*model.Follow
 		if len(fansModel) > int(in.PageSize) {
@@ -144,15 +141,11 @@ func (l *FansListLogic) FansList(in *user.FansListRequest) (*user.FansListRespon
 		cur.FansCount = int64(uidFansCount[cur.UserId])
 		cur.FollowCount = int64(uidFollowCount[cur.UserId])
 	}
-	ret := &user.FansListResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: &user.FansListData{
-			IsEnd:  isEnd,
-			Cursor: cursor,
-			Id:     lastId,
-			Items:  curPage,
-		},
+	resp.Data.IsEnd = isEnd
+	resp.Data.Cursor = cursor
+	resp.Data.Id = lastId
+	if curPage != nil {
+		resp.Data.Items = curPage
 	}
 
 	if !isCache {
@@ -160,14 +153,13 @@ func (l *FansListLogic) FansList(in *user.FansListRequest) (*user.FansListRespon
 			if len(fansModel) < types.CacheMaxFansCount && len(fansModel) > 0 {
 				fansModel = append(fansModel, &model.Follow{UserID: -1})
 			}
-			err = l.addCacheFans(context.Background(), in.UserId, fansModel)
-			if err != nil {
+			if err := l.addCacheFans(context.Background(), in.UserId, fansModel); err != nil {
 				logx.Errorf("addCacheFans error: %v", err)
 			}
 		})
 	}
 
-	return ret, nil
+	return resp, nil
 }
 
 func (l *FansListLogic) cacheFansUserIds(ctx context.Context, userId, cursor, pageSize int64) ([]int64, int64, error) {

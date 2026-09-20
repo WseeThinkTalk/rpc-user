@@ -37,7 +37,12 @@ func hashPassword(password string) string {
 	return hash
 }
 
-func (l *RegisterLogic) Register(in *user.RegisterRequest) (*user.RegisterResponse, error) {
+func (l *RegisterLogic) Register(in *user.RegisterRequest) (resp *user.RegisterResponse, err error) {
+	resp = new(user.RegisterResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = new(user.RegisterData)
+
 	if len(in.Username) == 0 {
 		return nil, code.RegisterNameEmpty
 	}
@@ -61,11 +66,6 @@ func (l *RegisterLogic) Register(in *user.RegisterRequest) (*user.RegisterRespon
 		return nil, err
 	}
 
-	return &user.RegisterResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: &user.RegisterData{
-			UserId: userId,
-		},
-	}, nil
+	resp.Data.UserId = userId
+	return resp, nil
 }

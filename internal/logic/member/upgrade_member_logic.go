@@ -24,7 +24,11 @@ func NewUpgradeMemberLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Upg
 	return &UpgradeMemberLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *UpgradeMemberLogic) UpgradeMember(in *user.UpgradeMemberRequest) (*user.UpgradeMemberResponse, error) {
+func (l *UpgradeMemberLogic) UpgradeMember(in *user.UpgradeMemberRequest) (resp *user.UpgradeMemberResponse, err error) {
+	resp = new(user.UpgradeMemberResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+
 	if in.UserId == 0 {
 		return nil, code.MemberUserIdEmpty
 	}
@@ -94,8 +98,5 @@ func (l *UpgradeMemberLogic) UpgradeMember(in *user.UpgradeMemberRequest) (*user
 		return nil, code.PaymentFailed
 	}
 
-	return &user.UpgradeMemberResponse{
-		Code: 200,
-		Msg:  "success",
-	}, nil
+	return resp, nil
 }

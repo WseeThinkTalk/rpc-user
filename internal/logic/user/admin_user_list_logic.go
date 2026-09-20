@@ -23,7 +23,13 @@ func NewAdminUserListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Adm
 	}
 }
 
-func (l *AdminUserListLogic) AdminUserList(in *user.AdminUserListRequest) (*user.AdminUserListResponse, error) {
+func (l *AdminUserListLogic) AdminUserList(in *user.AdminUserListRequest) (resp *user.AdminUserListResponse, err error) {
+	resp = new(user.AdminUserListResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = new(user.AdminUserListData)
+	resp.Data.Users = make([]*user.UserInfoData, 0)
+
 	users, err := l.svcCtx.UserModel.FindAll(l.ctx, in.Keyword, in.Cursor, in.PageSize)
 	if err != nil {
 		return nil, err
@@ -34,10 +40,9 @@ func (l *AdminUserListLogic) AdminUserList(in *user.AdminUserListRequest) (*user
 		isEnd = true
 	}
 
-	var items []*user.UserInfoData
-	var nextCursor int64 = in.Cursor
+	nextCursor := in.Cursor
 	for _, u := range users {
-		items = append(items, &user.UserInfoData{
+		resp.Data.Users = append(resp.Data.Users, &user.UserInfoData{
 			UserId:       int64(u.Id),
 			Username:     u.Username,
 			Mobile:       u.Mobile,
@@ -51,13 +56,8 @@ func (l *AdminUserListLogic) AdminUserList(in *user.AdminUserListRequest) (*user
 		nextCursor = int64(u.Id)
 	}
 
-	return &user.AdminUserListResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: &user.AdminUserListData{
-			Users:  items,
-			Cursor: nextCursor,
-			IsEnd:  isEnd,
-		},
-	}, nil
+	resp.Data.Cursor = nextCursor
+	resp.Data.IsEnd = isEnd
+
+	return resp, nil
 }

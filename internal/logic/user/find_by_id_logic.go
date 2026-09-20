@@ -23,7 +23,12 @@ func NewFindByIdLogic(ctx context.Context, svcCtx *svc.ServiceContext) *FindById
 	}
 }
 
-func (l *FindByIdLogic) FindById(in *user.FindByIdRequest) (*user.FindByIdResponse, error) {
+func (l *FindByIdLogic) FindById(in *user.FindByIdRequest) (resp *user.FindByIdResponse, err error) {
+	resp = new(user.FindByIdResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = new(user.UserInfoData)
+
 	u, err := l.svcCtx.UserModel.FindOne(l.ctx, uint64(in.UserId))
 	if err != nil {
 		logx.Errorf("用户不存在: %v", err)
@@ -38,19 +43,15 @@ func (l *FindByIdLogic) FindById(in *user.FindByIdRequest) (*user.FindByIdRespon
 		}
 	}
 
-	return &user.FindByIdResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: &user.UserInfoData{
-			UserId:       int64(u.Id),
-			Username:     u.Username,
-			Avatar:       u.Avatar,
-			Mobile:       u.Mobile,
-			Role:         u.Role,
-			DisplayId:    u.DisplayId,
-			Bio:          u.Bio,
-			Gender:       int32(u.Gender),
-			ProfileCover: u.ProfileCover,
-		},
-	}, nil
+	resp.Data.UserId = int64(u.Id)
+	resp.Data.Username = u.Username
+	resp.Data.Avatar = u.Avatar
+	resp.Data.Mobile = u.Mobile
+	resp.Data.Role = u.Role
+	resp.Data.DisplayId = u.DisplayId
+	resp.Data.Bio = u.Bio
+	resp.Data.Gender = int32(u.Gender)
+	resp.Data.ProfileCover = u.ProfileCover
+
+	return resp, nil
 }

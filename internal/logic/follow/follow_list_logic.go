@@ -31,7 +31,13 @@ func NewFollowListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Follow
 	}
 }
 
-func (l *FollowListLogic) FollowList(in *user.FollowListRequest) (*user.FollowListResponse, error) {
+func (l *FollowListLogic) FollowList(in *user.FollowListRequest) (resp *user.FollowListResponse, err error) {
+	resp = new(user.FollowListResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = new(user.FollowListData)
+	resp.Data.Items = make([]*user.FollowItem, 0)
+
 	if in.UserId == 0 {
 		return nil, code.UserIdEmpty
 	}
@@ -43,7 +49,6 @@ func (l *FollowListLogic) FollowList(in *user.FollowListRequest) (*user.FollowLi
 	}
 
 	var (
-		err             error
 		isCache, isEnd  bool
 		lastId, cursor  int64
 		followedUserIds []int64
@@ -59,11 +64,7 @@ func (l *FollowListLogic) FollowList(in *user.FollowListRequest) (*user.FollowLi
 			isEnd = true
 		}
 		if len(followUserIds) == 0 {
-			return &user.FollowListResponse{
-				Code: 200,
-				Msg:  "success",
-				Data: &user.FollowListData{},
-			}, nil
+			return resp, nil
 		}
 		follows, err = l.svcCtx.FollowModel.FindByFollowedUserIds(l.ctx, in.UserId, followUserIds)
 		if err != nil {
@@ -85,11 +86,7 @@ func (l *FollowListLogic) FollowList(in *user.FollowListRequest) (*user.FollowLi
 			return nil, err
 		}
 		if len(follows) == 0 {
-			return &user.FollowListResponse{
-				Code: 200,
-				Msg:  "success",
-				Data: &user.FollowListData{},
-			}, nil
+			return resp, nil
 		}
 		var firstPageFollows []*model.Follow
 		if len(follows) > int(in.PageSize) {
@@ -132,15 +129,11 @@ func (l *FollowListLogic) FollowList(in *user.FollowListRequest) (*user.FollowLi
 	for _, cur := range curPage {
 		cur.FansCount = int64(uidFansCount[cur.FollowedUserId])
 	}
-	ret := &user.FollowListResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: &user.FollowListData{
-			IsEnd:  isEnd,
-			Cursor: cursor,
-			Id:     lastId,
-			Items:  curPage,
-		},
+	resp.Data.IsEnd = isEnd
+	resp.Data.Cursor = cursor
+	resp.Data.Id = lastId
+	if curPage != nil {
+		resp.Data.Items = curPage
 	}
 
 	if !isCache {
@@ -148,14 +141,13 @@ func (l *FollowListLogic) FollowList(in *user.FollowListRequest) (*user.FollowLi
 			if len(follows) < types.CacheMaxFollowCount && len(follows) > 0 {
 				follows = append(follows, &model.Follow{FollowedUserID: -1})
 			}
-			err = l.addCacheFollow(context.Background(), in.UserId, follows)
-			if err != nil {
+			if err := l.addCacheFollow(context.Background(), in.UserId, follows); err != nil {
 				logx.Errorf("addCacheFollow error: %v", err)
 			}
 		})
 	}
 
-	return ret, nil
+	return resp, nil
 }
 
 func (l *FollowListLogic) cacheFollowUserIds(ctx context.Context, userId, cursor, pageSize int64) ([]int64, error) {

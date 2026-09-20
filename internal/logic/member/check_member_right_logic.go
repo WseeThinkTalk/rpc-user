@@ -22,7 +22,12 @@ func NewCheckMemberRightLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 	return &CheckMemberRightLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *CheckMemberRightLogic) CheckMemberRight(in *user.CheckMemberRightRequest) (*user.CheckMemberRightResponse, error) {
+func (l *CheckMemberRightLogic) CheckMemberRight(in *user.CheckMemberRightRequest) (resp *user.CheckMemberRightResponse, err error) {
+	resp = new(user.CheckMemberRightResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = new(user.CheckMemberRightData)
+
 	if in.UserId == 0 {
 		return nil, code.MemberUserIdEmpty
 	}
@@ -34,35 +39,27 @@ func (l *CheckMemberRightLogic) CheckMemberRight(in *user.CheckMemberRightReques
 	}
 
 	if m == nil || m.Status != types.MemberStatusActive || m.ExpireTime.Before(time.Now()) {
-		return &user.CheckMemberRightResponse{
-			Code: 200,
-			Msg:  "success",
-			Data: &user.CheckMemberRightData{HasRight: false, Level: types.MemberLevelNormal},
-		}, nil
+		resp.Data.HasRight = false
+		resp.Data.Level = types.MemberLevelNormal
+		return resp, nil
 	}
 
 	if in.RightKey == "" {
-		return &user.CheckMemberRightResponse{
-			Code: 200,
-			Msg:  "success",
-			Data: &user.CheckMemberRightData{HasRight: true, Level: m.Level},
-		}, nil
+		resp.Data.HasRight = true
+		resp.Data.Level = m.Level
+		return resp, nil
 	}
 
 	rights := types.MemberRights[m.Level]
 	for _, r := range rights {
 		if r == in.RightKey {
-			return &user.CheckMemberRightResponse{
-				Code: 200,
-				Msg:  "success",
-				Data: &user.CheckMemberRightData{HasRight: true, Level: m.Level},
-			}, nil
+			resp.Data.HasRight = true
+			resp.Data.Level = m.Level
+			return resp, nil
 		}
 	}
 
-	return &user.CheckMemberRightResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: &user.CheckMemberRightData{HasRight: false, Level: m.Level},
-	}, nil
+	resp.Data.HasRight = false
+	resp.Data.Level = m.Level
+	return resp, nil
 }

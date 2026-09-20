@@ -23,7 +23,11 @@ func NewUpdateProfileLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Upd
 	}
 }
 
-func (l *UpdateProfileLogic) UpdateProfile(in *user.UpdateProfileRequest) (*user.UpdateProfileResponse, error) {
+func (l *UpdateProfileLogic) UpdateProfile(in *user.UpdateProfileRequest) (resp *user.UpdateProfileResponse, err error) {
+	resp = new(user.UpdateProfileResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+
 	u, err := l.svcCtx.UserModel.FindOne(l.ctx, uint64(in.UserId))
 	if err != nil {
 		logx.Errorf("Find user error: %v", err)
@@ -44,8 +48,5 @@ func (l *UpdateProfileLogic) UpdateProfile(in *user.UpdateProfileRequest) (*user
 		return nil, err
 	}
 
-	return &user.UpdateProfileResponse{
-		Code: 200,
-		Msg:  "success",
-	}, nil
+	return resp, nil
 }

@@ -21,7 +21,13 @@ func NewMemberOrderListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *M
 	return &MemberOrderListLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-func (l *MemberOrderListLogic) MemberOrderList(in *user.MemberOrderListRequest) (*user.MemberOrderListResponse, error) {
+func (l *MemberOrderListLogic) MemberOrderList(in *user.MemberOrderListRequest) (resp *user.MemberOrderListResponse, err error) {
+	resp = new(user.MemberOrderListResponse)
+	resp.Code = 200
+	resp.Msg = "success"
+	resp.Data = new(user.MemberOrderListData)
+	resp.Data.Items = make([]*user.MemberOrderItem, 0)
+
 	if in.UserId == 0 {
 		return nil, code.MemberUserIdEmpty
 	}
@@ -42,16 +48,12 @@ func (l *MemberOrderListLogic) MemberOrderList(in *user.MemberOrderListRequest) 
 		isEnd = true
 	}
 	if len(orders) == 0 {
-		return &user.MemberOrderListResponse{
-			Code: 200,
-			Msg:  "success",
-			Data: &user.MemberOrderListData{IsEnd: true},
-		}, nil
+		resp.Data.IsEnd = true
+		return resp, nil
 	}
 
-	items := make([]*user.MemberOrderItem, 0, len(orders))
 	for _, o := range orders {
-		items = append(items, &user.MemberOrderItem{
+		resp.Data.Items = append(resp.Data.Items, &user.MemberOrderItem{
 			Id:           o.ID,
 			UserId:       o.UserID,
 			Level:        o.Level,
@@ -63,18 +65,13 @@ func (l *MemberOrderListLogic) MemberOrderList(in *user.MemberOrderListRequest) 
 		})
 	}
 
-	var nextCursor int64 = in.Cursor
+	nextCursor := in.Cursor
 	if len(orders) > 0 {
 		nextCursor = orders[len(orders)-1].ID
 	}
 
-	return &user.MemberOrderListResponse{
-		Code: 200,
-		Msg:  "success",
-		Data: &user.MemberOrderListData{
-			Items:  items,
-			Cursor: nextCursor,
-			IsEnd:  isEnd,
-		},
-	}, nil
+	resp.Data.Cursor = nextCursor
+	resp.Data.IsEnd = isEnd
+
+	return resp, nil
 }
