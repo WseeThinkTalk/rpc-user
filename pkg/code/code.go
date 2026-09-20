@@ -16,6 +16,7 @@ var (
 	OrderSnEmpty          = xcode.New(90007, "订单号不能为空")
 	OrderAlreadyProcessed = xcode.New(90008, "订单已被处理，无法重复更新")
 	OrderQueryFailed      = xcode.New(90009, "主动查询订单状态失败")
+	PaymentFailed         = xcode.New(90010, "支付处理失败")
 
 	// Follow (40000+)
 	FollowUserIdEmpty   = xcode.New(40001, "关注用户id为空")

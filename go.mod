@@ -3,8 +3,6 @@ module rpc-user
 go 1.26
 
 require (
-	github.com/elastic/elastic-transport-go/v8 v8.9.0
-	github.com/elastic/go-elasticsearch/v8 v8.19.6
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/golang/protobuf v1.5.4
 	github.com/joho/godotenv v1.5.1
