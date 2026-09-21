@@ -33,8 +33,6 @@ func NewFansListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *FansList
 
 func (l *FansListLogic) FansList(in *user.FansListRequest) (resp *user.FansListResponse, err error) {
 	resp = new(user.FansListResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(user.FansListData)
 	resp.Data.Items = make([]*user.FansItem, 0)
 

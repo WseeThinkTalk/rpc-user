@@ -26,8 +26,6 @@ func NewUpdateProfileLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Upd
 
 func (l *UpdateProfileLogic) UpdateProfile(in *user.UpdateProfileRequest) (resp *user.UpdateProfileResponse, err error) {
 	resp = new(user.UpdateProfileResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 
 	u, err := l.svcCtx.UserModel.FindOne(l.ctx, uint64(in.UserId))
 	if err != nil {

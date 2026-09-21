@@ -26,8 +26,6 @@ func NewUpgradeMemberLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Upg
 
 func (l *UpgradeMemberLogic) UpgradeMember(in *user.UpgradeMemberRequest) (resp *user.UpgradeMemberResponse, err error) {
 	resp = new(user.UpgradeMemberResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 
 	if in.UserId == 0 {
 		resp.Code = int64(code.MemberUserIdEmpty.Code())

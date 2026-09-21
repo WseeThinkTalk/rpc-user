@@ -53,8 +53,6 @@ func generateOrderSn() string {
 
 func (l *CreateOrderLogic) CreateOrder(in *user.CreateOrderRequest) (resp *user.CreateOrderResponse, err error) {
 	resp = new(user.CreateOrderResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(user.CreateOrderData)
 
 	if in.UserId <= 0 {

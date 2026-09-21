@@ -38,8 +38,6 @@ func hashPassword(password string) string {
 
 func (l *RegisterLogic) Register(in *user.RegisterRequest) (resp *user.RegisterResponse, err error) {
 	resp = new(user.RegisterResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(user.RegisterData)
 
 	if len(in.Username) == 0 {

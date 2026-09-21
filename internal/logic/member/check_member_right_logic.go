@@ -24,8 +24,6 @@ func NewCheckMemberRightLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 
 func (l *CheckMemberRightLogic) CheckMemberRight(in *user.CheckMemberRightRequest) (resp *user.CheckMemberRightResponse, err error) {
 	resp = new(user.CheckMemberRightResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(user.CheckMemberRightData)
 
 	if in.UserId == 0 {

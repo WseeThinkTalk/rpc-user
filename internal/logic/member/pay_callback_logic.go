@@ -31,8 +31,6 @@ func NewPayCallbackLogic(ctx context.Context, svcCtx *svc.ServiceContext) *PayCa
 
 func (l *PayCallbackLogic) PayCallback(in *user.PayCallbackRequest) (resp *user.PayCallbackResponse, err error) {
 	resp = new(user.PayCallbackResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 
 	if in.OrderSn == "" {
 		resp.Code = int64(code.OrderSnEmpty.Code())

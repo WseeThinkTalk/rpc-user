@@ -33,8 +33,6 @@ func NewFollowListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Follow
 
 func (l *FollowListLogic) FollowList(in *user.FollowListRequest) (resp *user.FollowListResponse, err error) {
 	resp = new(user.FollowListResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(user.FollowListData)
 	resp.Data.Items = make([]*user.FollowItem, 0)
 

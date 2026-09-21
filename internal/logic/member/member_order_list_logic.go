@@ -23,8 +23,6 @@ func NewMemberOrderListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *M
 
 func (l *MemberOrderListLogic) MemberOrderList(in *user.MemberOrderListRequest) (resp *user.MemberOrderListResponse, err error) {
 	resp = new(user.MemberOrderListResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(user.MemberOrderListData)
 	resp.Data.Items = make([]*user.MemberOrderItem, 0)
 
