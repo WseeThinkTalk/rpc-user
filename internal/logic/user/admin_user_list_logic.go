@@ -25,8 +25,6 @@ func NewAdminUserListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Adm
 
 func (l *AdminUserListLogic) AdminUserList(in *user.AdminUserListRequest) (resp *user.AdminUserListResponse, err error) {
 	resp = new(user.AdminUserListResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(user.AdminUserListData)
 	resp.Data.Users = make([]*user.UserInfoData, 0)
 

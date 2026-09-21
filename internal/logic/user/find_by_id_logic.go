@@ -25,8 +25,6 @@ func NewFindByIdLogic(ctx context.Context, svcCtx *svc.ServiceContext) *FindById
 
 func (l *FindByIdLogic) FindById(in *user.FindByIdRequest) (resp *user.FindByIdResponse, err error) {
 	resp = new(user.FindByIdResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(user.UserInfoData)
 
 	u, err := l.svcCtx.UserModel.FindOne(l.ctx, uint64(in.UserId))

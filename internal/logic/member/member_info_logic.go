@@ -23,8 +23,6 @@ func NewMemberInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Member
 
 func (l *MemberInfoLogic) MemberInfo(in *user.MemberInfoRequest) (resp *user.MemberInfoResponse, err error) {
 	resp = new(user.MemberInfoResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(user.MemberInfoData)
 
 	if in.UserId == 0 {

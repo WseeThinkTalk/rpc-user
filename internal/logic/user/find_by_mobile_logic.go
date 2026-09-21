@@ -26,8 +26,6 @@ func NewFindByMobileLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Find
 
 func (l *FindByMobileLogic) FindByMobile(in *user.FindByMobileRequest) (resp *user.FindByMobileResponse, err error) {
 	resp = new(user.FindByMobileResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 	resp.Data = new(user.UserAuthData)
 
 	u, err := l.svcCtx.UserModel.FindOneByMobile(l.ctx, in.Mobile)

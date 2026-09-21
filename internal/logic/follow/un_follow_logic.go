@@ -30,8 +30,6 @@ func NewUnFollowLogic(ctx context.Context, svcCtx *svc.ServiceContext) *UnFollow
 
 func (l *UnFollowLogic) UnFollow(in *user.UnFollowRequest) (resp *user.UnFollowResponse, err error) {
 	resp = new(user.UnFollowResponse)
-	resp.Code = 200
-	resp.Msg = "success"
 
 	if in.UserId == 0 {
 		return nil, code.FollowUserIdEmpty
