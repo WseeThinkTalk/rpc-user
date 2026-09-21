@@ -1,6 +1,7 @@
 package userlogic
 
 import (
+	"rpc-user/pkg/code"
 	"context"
 
 	model "rpc-user/internal/model/user"
@@ -31,12 +32,10 @@ func (l *FindByMobileLogic) FindByMobile(in *user.FindByMobileRequest) (resp *us
 	u, err := l.svcCtx.UserModel.FindOneByMobile(l.ctx, in.Mobile)
 	if err != nil {
 		if err == model.ErrNotFound {
-			resp.Data = nil
 			return resp, nil
 		}
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
-		resp.Data = nil
 		return resp, nil
 	}
 

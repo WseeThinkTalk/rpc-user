@@ -45,7 +45,7 @@ func (l *UpgradeMemberLogic) UpgradeMember(in *user.UpgradeMemberRequest) (resp 
 
 	existing, err := l.svcCtx.MemberOrderModel.FindByTransactionId(l.ctx, in.TransactionId)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

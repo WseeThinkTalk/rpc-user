@@ -45,7 +45,7 @@ func (l *PayCallbackLogic) PayCallback(in *user.PayCallbackRequest) (resp *user.
 
 	order, err := l.svcCtx.MemberOrderModel.FindByOrderSn(l.ctx, in.OrderSn)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

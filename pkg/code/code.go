@@ -3,6 +3,10 @@ package code
 import "rpc-user/pkg/xcode"
 
 var (
+	// Common
+	ServerErr = xcode.ServerErr
+	NotFound  = xcode.NotFound
+
 	// User (20000+)
 	RegisterNameEmpty = xcode.New(20001, "注册名字不能为空")
 

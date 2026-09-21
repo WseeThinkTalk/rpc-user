@@ -43,7 +43,6 @@ func (l *RegisterLogic) Register(in *user.RegisterRequest) (resp *user.RegisterR
 	if len(in.Username) == 0 {
 		resp.Code = int64(code.RegisterNameEmpty.Code())
 		resp.Msg = code.RegisterNameEmpty.Message()
-		resp.Data = nil
 		return resp, nil
 	}
 
@@ -57,16 +56,14 @@ func (l *RegisterLogic) Register(in *user.RegisterRequest) (resp *user.RegisterR
 		UpdateTime: time.Now(),
 	})
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
-		resp.Data = nil
 		return resp, nil
 	}
 	userId, err := ret.LastInsertId()
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
-		resp.Data = nil
 		return resp, nil
 	}
 

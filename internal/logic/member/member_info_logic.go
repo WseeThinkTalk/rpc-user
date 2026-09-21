@@ -28,15 +28,13 @@ func (l *MemberInfoLogic) MemberInfo(in *user.MemberInfoRequest) (resp *user.Mem
 	if in.UserId == 0 {
 		resp.Code = int64(code.MemberUserIdEmpty.Code())
 		resp.Msg = code.MemberUserIdEmpty.Message()
-		resp.Data = nil
 		return resp, nil
 	}
 
 	m, err := l.svcCtx.MemberModel.FindByUserId(l.ctx, in.UserId)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
-		resp.Data = nil
 		return resp, nil
 	}
 	if m == nil {

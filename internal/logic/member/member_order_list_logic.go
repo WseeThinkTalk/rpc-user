@@ -29,7 +29,6 @@ func (l *MemberOrderListLogic) MemberOrderList(in *user.MemberOrderListRequest) 
 	if in.UserId == 0 {
 		resp.Code = int64(code.MemberUserIdEmpty.Code())
 		resp.Msg = code.MemberUserIdEmpty.Message()
-		resp.Data = nil
 		return resp, nil
 	}
 	if in.PageSize == 0 {
@@ -38,9 +37,8 @@ func (l *MemberOrderListLogic) MemberOrderList(in *user.MemberOrderListRequest) 
 
 	orders, err := l.svcCtx.MemberOrderModel.FindByUserId(l.ctx, in.UserId, in.Cursor, in.PageSize+1)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
-		resp.Data = nil
 		return resp, nil
 	}
 

@@ -39,7 +39,6 @@ func (l *FollowListLogic) FollowList(in *user.FollowListRequest) (resp *user.Fol
 	if in.UserId == 0 {
 		resp.Code = int64(code.UserIdEmpty.Code())
 		resp.Msg = code.UserIdEmpty.Message()
-		resp.Data = nil
 		return resp, nil
 	}
 	if in.PageSize == 0 {
@@ -69,9 +68,8 @@ func (l *FollowListLogic) FollowList(in *user.FollowListRequest) (resp *user.Fol
 		}
 		follows, err = l.svcCtx.FollowModel.FindByFollowedUserIds(l.ctx, in.UserId, followUserIds)
 		if err != nil {
-			resp.Code = 500
+			resp.Code = int64(code.ServerErr.Code())
 			resp.Msg = err.Error()
-			resp.Data = nil
 			return resp, nil
 		}
 		for _, follow := range follows {
@@ -85,9 +83,8 @@ func (l *FollowListLogic) FollowList(in *user.FollowListRequest) (resp *user.Fol
 	} else {
 		follows, err = l.svcCtx.FollowModel.FindByUserId(l.ctx, in.UserId, types.CacheMaxFollowCount)
 		if err != nil {
-			resp.Code = 500
+			resp.Code = int64(code.ServerErr.Code())
 			resp.Msg = err.Error()
-			resp.Data = nil
 			return resp, nil
 		}
 		if len(follows) == 0 {

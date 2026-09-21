@@ -52,7 +52,7 @@ func (l *FollowLogic) Follow(in *user.FollowRequest) (resp *user.FollowResponse,
 	}
 	follow, err := l.svcCtx.FollowModel.FindByUserIDAndFollowedUserID(l.ctx, in.UserId, in.FollowedUserId)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}
@@ -85,7 +85,7 @@ func (l *FollowLogic) Follow(in *user.FollowRequest) (resp *user.FollowResponse,
 		return model.NewFollowCountModel(tx).IncrFansCount(l.ctx, in.FollowedUserId)
 	})
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

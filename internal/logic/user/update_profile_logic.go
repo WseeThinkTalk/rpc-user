@@ -1,6 +1,7 @@
 package userlogic
 
 import (
+	"rpc-user/pkg/code"
 	"context"
 
 	"rpc-user/internal/model/user"
@@ -30,11 +31,11 @@ func (l *UpdateProfileLogic) UpdateProfile(in *user.UpdateProfileRequest) (resp 
 	u, err := l.svcCtx.UserModel.FindOne(l.ctx, uint64(in.UserId))
 	if err != nil {
 		if err == model.ErrNotFound {
-			resp.Code = 404
+			resp.Code = int64(code.NotFound.Code())
 			resp.Msg = "用户不存在"
 			return resp, nil
 		}
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}
@@ -49,7 +50,7 @@ func (l *UpdateProfileLogic) UpdateProfile(in *user.UpdateProfileRequest) (resp 
 
 	err = l.svcCtx.UserModel.Update(l.ctx, u)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

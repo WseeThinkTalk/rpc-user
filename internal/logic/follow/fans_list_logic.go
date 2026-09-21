@@ -39,7 +39,6 @@ func (l *FansListLogic) FansList(in *user.FansListRequest) (resp *user.FansListR
 	if in.UserId == 0 {
 		resp.Code = int64(code.UserIdEmpty.Code())
 		resp.Msg = code.UserIdEmpty.Message()
-		resp.Data = nil
 		return resp, nil
 	}
 	if in.PageSize == 0 {
@@ -67,9 +66,8 @@ func (l *FansListLogic) FansList(in *user.FansListRequest) (resp *user.FansListR
 		}
 		fansModel, err = l.svcCtx.FollowModel.FindByUserIds(l.ctx, in.UserId, fansUIds)
 		if err != nil {
-			resp.Code = 500
+			resp.Code = int64(code.ServerErr.Code())
 			resp.Msg = err.Error()
-			resp.Data = nil
 			return resp, nil
 		}
 		fansMap := make(map[int64]*model.Follow)
@@ -90,9 +88,8 @@ func (l *FansListLogic) FansList(in *user.FansListRequest) (resp *user.FansListR
 	} else {
 		fansModel, err = l.svcCtx.FollowModel.FindByFollowedUserId(l.ctx, in.UserId, types.CacheMaxFansCount)
 		if err != nil {
-			resp.Code = 500
+			resp.Code = int64(code.ServerErr.Code())
 			resp.Msg = err.Error()
-			resp.Data = nil
 			return resp, nil
 		}
 		if len(fansModel) == 0 {

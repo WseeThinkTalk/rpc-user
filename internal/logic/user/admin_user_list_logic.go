@@ -1,6 +1,7 @@
 package userlogic
 
 import (
+	"rpc-user/pkg/code"
 	"context"
 
 	"rpc-user/internal/svc"
@@ -30,9 +31,8 @@ func (l *AdminUserListLogic) AdminUserList(in *user.AdminUserListRequest) (resp 
 
 	users, err := l.svcCtx.UserModel.FindAll(l.ctx, in.Keyword, in.Cursor, in.PageSize)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
-		resp.Data = nil
 		return resp, nil
 	}
 

@@ -1,6 +1,7 @@
 package userlogic
 
 import (
+	"rpc-user/pkg/code"
 	"context"
 
 	"rpc-user/internal/svc"
@@ -27,7 +28,7 @@ func (l *UpgradePasswordLogic) UpgradePassword(in *user.UpgradePasswordRequest) 
 	resp = new(user.UpgradePasswordResponse)
 
 	if err := l.svcCtx.UserModel.UpdatePassword(l.ctx, uint64(in.UserId), in.PasswordHash); err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
 		return resp, nil
 	}

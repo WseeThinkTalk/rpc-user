@@ -58,7 +58,6 @@ func (l *CreateOrderLogic) CreateOrder(in *user.CreateOrderRequest) (resp *user.
 	if in.UserId <= 0 {
 		resp.Code = int64(code.MemberUserIdEmpty.Code())
 		resp.Msg = code.MemberUserIdEmpty.Message()
-		resp.Data = nil
 		return resp, nil
 	}
 
@@ -85,7 +84,6 @@ func (l *CreateOrderLogic) CreateOrder(in *user.CreateOrderRequest) (resp *user.
 	if !ok {
 		resp.Code = int64(code.LevelInvalid.Code())
 		resp.Msg = code.LevelInvalid.Message()
-		resp.Data = nil
 		return resp, nil
 	}
 
@@ -127,9 +125,8 @@ func (l *CreateOrderLogic) CreateOrder(in *user.CreateOrderRequest) (resp *user.
 
 	err = l.svcCtx.MemberOrderModel.Insert(l.ctx, order)
 	if err != nil {
-		resp.Code = 500
+		resp.Code = int64(code.ServerErr.Code())
 		resp.Msg = err.Error()
-		resp.Data = nil
 		return resp, nil
 	}
 
