@@ -72,12 +72,13 @@ func (l *FollowListLogic) FollowList(in *user.FollowListRequest) (resp *user.Fol
 			resp.Msg = err.Error()
 			return resp, nil
 		}
-		for _, follow := range follows {
-			followedUserIds = append(followedUserIds, follow.FollowedUserID)
+		// 组装缓存中的关注列表
+		for _, v := range follows {
+			followedUserIds = append(followedUserIds, v.FollowedUserID)
 			curPage = append(curPage, &user.FollowItem{
-				Id:             follow.ID,
-				FollowedUserId: follow.FollowedUserID,
-				CreateTime:     follow.CreateTime.Unix(),
+				Id:             v.ID,
+				FollowedUserId: v.FollowedUserID,
+				CreateTime:     v.CreateTime.Unix(),
 			})
 		}
 	} else {
@@ -97,12 +98,13 @@ func (l *FollowListLogic) FollowList(in *user.FollowListRequest) (resp *user.Fol
 			firstPageFollows = follows
 			isEnd = true
 		}
-		for _, follow := range firstPageFollows {
-			followedUserIds = append(followedUserIds, follow.FollowedUserID)
+		// 组装第一页关注列表数据
+		for _, v := range firstPageFollows {
+			followedUserIds = append(followedUserIds, v.FollowedUserID)
 			curPage = append(curPage, &user.FollowItem{
-				Id:             follow.ID,
-				FollowedUserId: follow.FollowedUserID,
-				CreateTime:     follow.CreateTime.Unix(),
+				Id:             v.ID,
+				FollowedUserId: v.FollowedUserID,
+				CreateTime:     v.CreateTime.Unix(),
 			})
 		}
 	}
@@ -113,8 +115,9 @@ func (l *FollowListLogic) FollowList(in *user.FollowListRequest) (resp *user.Fol
 		if cursor < 0 {
 			cursor = 0
 		}
-		for k, follow := range curPage {
-			if follow.CreateTime == in.Cursor && follow.Id == in.Id {
+		// 根据游标匹配当前分页起始位置
+		for k, v := range curPage {
+			if v.CreateTime == in.Cursor && v.Id == in.Id {
 				curPage = curPage[k:]
 				break
 			}
@@ -123,11 +126,13 @@ func (l *FollowListLogic) FollowList(in *user.FollowListRequest) (resp *user.Fol
 	fc, err := l.svcCtx.FollowCountModel.FindByUserIds(l.ctx, followedUserIds)
 	_ = err
 	uidFansCount := make(map[int64]int)
-	for _, f := range fc {
-		uidFansCount[f.UserID] = f.FansCount
+	// 汇总各关注用户的粉丝数
+	for _, v := range fc {
+		uidFansCount[v.UserID] = v.FansCount
 	}
-	for _, cur := range curPage {
-		cur.FansCount = int64(uidFansCount[cur.FollowedUserId])
+	// 回填各关注项的粉丝数统计
+	for _, v := range curPage {
+		v.FansCount = int64(uidFansCount[v.FollowedUserId])
 	}
 	resp.Data.IsEnd = isEnd
 	resp.Data.Cursor = cursor
@@ -159,8 +164,9 @@ func (l *FollowListLogic) cacheFollowUserIds(ctx context.Context, userId, cursor
 		return nil, err
 	}
 	var uids []int64
-	for _, pair := range pairs {
-		uid, err := strconv.ParseInt(pair.Key, 10, 64)
+	// 解析 Redis ZSet 元素中的关注用户 ID
+	for _, v := range pairs {
+		uid, err := strconv.ParseInt(v.Key, 10, 64)
 		if err != nil {
 			continue
 		}
@@ -175,14 +181,15 @@ func (l *FollowListLogic) addCacheFollow(ctx context.Context, userId int64, foll
 		return nil
 	}
 	key := userFollowKey(userId)
-	for _, follow := range follows {
+	// 批量写入关注缓存到 Redis ZSet
+	for _, v := range follows {
 		var score int64
-		if follow.FollowedUserID == -1 {
+		if v.FollowedUserID == -1 {
 			score = 0
 		} else {
-			score = follow.CreateTime.Unix()
+			score = v.CreateTime.Unix()
 		}
-		_, err := l.svcCtx.BizRedis.ZaddCtx(ctx, key, score, strconv.FormatInt(follow.FollowedUserID, 10))
+		_, err := l.svcCtx.BizRedis.ZaddCtx(ctx, key, score, strconv.FormatInt(v.FollowedUserID, 10))
 		if err != nil {
 			return err
 		}

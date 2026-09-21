@@ -53,16 +53,17 @@ func (l *MemberOrderListLogic) MemberOrderList(in *user.MemberOrderListRequest) 
 		return resp, nil
 	}
 
-	for _, o := range orders {
+	// 转换会员订单数据模型为响应 DTO
+	for _, v := range orders {
 		resp.Data.Items = append(resp.Data.Items, &user.MemberOrderItem{
-			Id:           o.ID,
-			UserId:       o.UserID,
-			Level:        o.Level,
-			DurationDays: o.DurationDays,
-			Amount:       o.Amount,
-			PayChannel:   o.PayChannel,
-			Status:       o.Status,
-			CreateTime:   o.CreateTime.Unix(),
+			Id:           v.ID,
+			UserId:       v.UserID,
+			Level:        v.Level,
+			DurationDays: v.DurationDays,
+			Amount:       v.Amount,
+			PayChannel:   v.PayChannel,
+			Status:       v.Status,
+			CreateTime:   v.CreateTime.Unix(),
 		})
 	}
 

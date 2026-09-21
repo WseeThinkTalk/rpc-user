@@ -42,19 +42,20 @@ func (l *AdminUserListLogic) AdminUserList(in *user.AdminUserListRequest) (resp 
 	}
 
 	nextCursor := in.Cursor
-	for _, u := range users {
+	// 转换用户数据模型为响应 DTO
+	for _, v := range users {
 		resp.Data.Users = append(resp.Data.Users, &user.UserInfoData{
-			UserId:       int64(u.Id),
-			Username:     u.Username,
-			Mobile:       u.Mobile,
-			Avatar:       u.Avatar,
-			Role:         u.Role,
-			DisplayId:    u.DisplayId,
-			Bio:          u.Bio,
-			Gender:       int32(u.Gender),
-			ProfileCover: u.ProfileCover,
+			UserId:       int64(v.Id),
+			Username:     v.Username,
+			Mobile:       v.Mobile,
+			Avatar:       v.Avatar,
+			Role:         v.Role,
+			DisplayId:    v.DisplayId,
+			Bio:          v.Bio,
+			Gender:       int32(v.Gender),
+			ProfileCover: v.ProfileCover,
 		})
-		nextCursor = int64(u.Id)
+		nextCursor = int64(v.Id)
 	}
 
 	resp.Data.Cursor = nextCursor

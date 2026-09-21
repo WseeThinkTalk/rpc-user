@@ -52,8 +52,9 @@ func (l *CheckMemberRightLogic) CheckMemberRight(in *user.CheckMemberRightReques
 	}
 
 	rights := types.MemberRights[m.Level]
-	for _, r := range rights {
-		if r == in.RightKey {
+	// 匹配会员拥有的权限权益
+	for _, v := range rights {
+		if v == in.RightKey {
 			resp.Data.HasRight = true
 			resp.Data.Level = m.Level
 			return resp, nil

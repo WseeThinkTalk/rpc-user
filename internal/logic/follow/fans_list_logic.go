@@ -70,20 +70,22 @@ func (l *FansListLogic) FansList(in *user.FansListRequest) (resp *user.FansListR
 			resp.Msg = err.Error()
 			return resp, nil
 		}
+		// 构建粉丝ID到关注关系模型的映射
 		fansMap := make(map[int64]*model.Follow)
-		for _, f := range fansModel {
-			fansMap[f.UserID] = f
+		for _, v := range fansModel {
+			fansMap[v.UserID] = v
 		}
-		for _, uId := range fansUIds {
+		// 组装缓存中的粉丝列表
+		for _, v := range fansUIds {
 			fansItem := &user.FansItem{
-				UserId: uId,
+				UserId: v,
 			}
-			if f, ok := fansMap[uId]; ok {
+			if f, ok := fansMap[v]; ok {
 				fansItem.Id = f.ID
 				fansItem.CreateTime = f.CreateTime.Unix()
 			}
 			curPage = append(curPage, fansItem)
-			fansUserIds = append(fansUserIds, uId)
+			fansUserIds = append(fansUserIds, v)
 		}
 	} else {
 		fansModel, err = l.svcCtx.FollowModel.FindByFollowedUserId(l.ctx, in.UserId, types.CacheMaxFansCount)
@@ -102,13 +104,14 @@ func (l *FansListLogic) FansList(in *user.FansListRequest) (resp *user.FansListR
 			firstPageFans = fansModel
 			isEnd = true
 		}
-		for _, f := range firstPageFans {
+		// 组装第一页粉丝数据
+		for _, v := range firstPageFans {
 			curPage = append(curPage, &user.FansItem{
-				Id:         f.ID,
-				UserId:     f.UserID,
-				CreateTime: f.CreateTime.Unix(),
+				Id:         v.ID,
+				UserId:     v.UserID,
+				CreateTime: v.CreateTime.Unix(),
 			})
-			fansUserIds = append(fansUserIds, f.UserID)
+			fansUserIds = append(fansUserIds, v.UserID)
 		}
 	}
 	if len(curPage) > 0 {
@@ -122,8 +125,9 @@ func (l *FansListLogic) FansList(in *user.FansListRequest) (resp *user.FansListR
 		if cursor < 0 {
 			cursor = 0
 		}
-		for k, f := range curPage {
-			if f.CreateTime == in.Cursor && f.Id == in.Id {
+		// 根据游标匹配当前分页起始位置
+		for k, v := range curPage {
+			if v.CreateTime == in.Cursor && v.Id == in.Id {
 				curPage = curPage[k:]
 				break
 			}
@@ -133,13 +137,15 @@ func (l *FansListLogic) FansList(in *user.FansListRequest) (resp *user.FansListR
 	_ = err
 	uidFansCount := make(map[int64]int)
 	uidFollowCount := make(map[int64]int)
-	for _, f := range fc {
-		uidFansCount[f.UserID] = f.FansCount
-		uidFollowCount[f.UserID] = f.FollowCount
+	// 汇总各用户的粉丝数与关注数
+	for _, v := range fc {
+		uidFansCount[v.UserID] = v.FansCount
+		uidFollowCount[v.UserID] = v.FollowCount
 	}
-	for _, cur := range curPage {
-		cur.FansCount = int64(uidFansCount[cur.UserId])
-		cur.FollowCount = int64(uidFollowCount[cur.UserId])
+	// 回填各粉丝项的统计数据
+	for _, v := range curPage {
+		v.FansCount = int64(uidFansCount[v.UserId])
+		v.FollowCount = int64(uidFollowCount[v.UserId])
 	}
 	resp.Data.IsEnd = isEnd
 	resp.Data.Cursor = cursor
@@ -172,12 +178,13 @@ func (l *FansListLogic) cacheFansUserIds(ctx context.Context, userId, cursor, pa
 	}
 	var uids []int64
 	var score int64
-	for _, pair := range pairs {
-		uid, err := strconv.ParseInt(pair.Key, 10, 64)
+	// 解析 Redis ZSet 元素中的粉丝用户 ID 与时间戳
+	for _, v := range pairs {
+		uid, err := strconv.ParseInt(v.Key, 10, 64)
 		if err != nil {
 			continue
 		}
-		score = pair.Score
+		score = v.Score
 		uids = append(uids, uid)
 	}
 
@@ -189,14 +196,15 @@ func (l *FansListLogic) addCacheFans(ctx context.Context, userId int64, follows 
 		return nil
 	}
 	key := userFansKey(userId)
-	for _, follow := range follows {
+	// 批量写入粉丝缓存到 Redis ZSet
+	for _, v := range follows {
 		var score int64
-		if follow.UserID == -1 {
+		if v.UserID == -1 {
 			score = 0
 		} else {
-			score = follow.CreateTime.Unix()
+			score = v.CreateTime.Unix()
 		}
-		_, err := l.svcCtx.BizRedis.ZaddCtx(ctx, key, score, strconv.FormatInt(follow.UserID, 10))
+		_, err := l.svcCtx.BizRedis.ZaddCtx(ctx, key, score, strconv.FormatInt(v.UserID, 10))
 		if err != nil {
 			return err
 		}
