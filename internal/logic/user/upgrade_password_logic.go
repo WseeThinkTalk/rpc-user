@@ -25,10 +25,13 @@ func NewUpgradePasswordLogic(ctx context.Context, svcCtx *svc.ServiceContext) *U
 
 func (l *UpgradePasswordLogic) UpgradePassword(in *user.UpgradePasswordRequest) (resp *user.UpgradePasswordResponse, err error) {
 	resp = new(user.UpgradePasswordResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 
 	if err := l.svcCtx.UserModel.UpdatePassword(l.ctx, uint64(in.UserId), in.PasswordHash); err != nil {
-		l.Errorf("[UpgradePassword] err: %v userId: %d", err, in.UserId)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 	return resp, nil
 }

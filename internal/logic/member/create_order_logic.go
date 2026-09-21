@@ -53,10 +53,15 @@ func generateOrderSn() string {
 
 func (l *CreateOrderLogic) CreateOrder(in *user.CreateOrderRequest) (resp *user.CreateOrderResponse, err error) {
 	resp = new(user.CreateOrderResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 	resp.Data = new(user.CreateOrderData)
 
 	if in.UserId <= 0 {
-		return nil, code.MemberUserIdEmpty
+		resp.Code = int64(code.MemberUserIdEmpty.Code())
+		resp.Msg = code.MemberUserIdEmpty.Message()
+		resp.Data = nil
+		return resp, nil
 	}
 
 	var planId int32 = 0
@@ -80,7 +85,10 @@ func (l *CreateOrderLogic) CreateOrder(in *user.CreateOrderRequest) (resp *user.
 
 	plan, ok := planPricing[planId]
 	if !ok {
-		return nil, code.LevelInvalid
+		resp.Code = int64(code.LevelInvalid.Code())
+		resp.Msg = code.LevelInvalid.Message()
+		resp.Data = nil
+		return resp, nil
 	}
 
 	orderSn := generateOrderSn()
@@ -121,8 +129,10 @@ func (l *CreateOrderLogic) CreateOrder(in *user.CreateOrderRequest) (resp *user.
 
 	err = l.svcCtx.MemberOrderModel.Insert(l.ctx, order)
 	if err != nil {
-		l.Errorf("[CreateOrder] Insert member_order error: %v, order_sn: %s", err, orderSn)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		resp.Data = nil
+		return resp, nil
 	}
 
 	resp.Data.OrderSn = orderSn

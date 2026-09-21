@@ -3,6 +3,7 @@ package userlogic
 import (
 	"context"
 
+	"rpc-user/internal/model/user"
 	"rpc-user/internal/svc"
 	"rpc-user/user"
 
@@ -25,11 +26,19 @@ func NewUpdateProfileLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Upd
 
 func (l *UpdateProfileLogic) UpdateProfile(in *user.UpdateProfileRequest) (resp *user.UpdateProfileResponse, err error) {
 	resp = new(user.UpdateProfileResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 
 	u, err := l.svcCtx.UserModel.FindOne(l.ctx, uint64(in.UserId))
 	if err != nil {
-		logx.Errorf("Find user error: %v", err)
-		return nil, err
+		if err == model.ErrNotFound {
+			resp.Code = 404
+			resp.Msg = "用户不存在"
+			return resp, nil
+		}
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 
 	u.Username = in.Username
@@ -42,8 +51,9 @@ func (l *UpdateProfileLogic) UpdateProfile(in *user.UpdateProfileRequest) (resp 
 
 	err = l.svcCtx.UserModel.Update(l.ctx, u)
 	if err != nil {
-		logx.Errorf("Update user error: %v", err)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 
 	return resp, nil

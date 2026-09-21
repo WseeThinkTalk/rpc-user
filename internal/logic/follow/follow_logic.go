@@ -34,20 +34,29 @@ func NewFollowLogic(ctx context.Context, svcCtx *svc.ServiceContext) *FollowLogi
 
 func (l *FollowLogic) Follow(in *user.FollowRequest) (resp *user.FollowResponse, err error) {
 	resp = new(user.FollowResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 
 	if in.UserId == 0 {
-		return nil, code.FollowUserIdEmpty
+		resp.Code = int64(code.FollowUserIdEmpty.Code())
+		resp.Msg = code.FollowUserIdEmpty.Message()
+		return resp, nil
 	}
 	if in.FollowedUserId == 0 {
-		return nil, code.FollowedUserIdEmpty
+		resp.Code = int64(code.FollowedUserIdEmpty.Code())
+		resp.Msg = code.FollowedUserIdEmpty.Message()
+		return resp, nil
 	}
 	if in.UserId == in.FollowedUserId {
-		return nil, code.CannotFollowSelf
+		resp.Code = int64(code.CannotFollowSelf.Code())
+		resp.Msg = code.CannotFollowSelf.Message()
+		return resp, nil
 	}
 	follow, err := l.svcCtx.FollowModel.FindByUserIDAndFollowedUserID(l.ctx, in.UserId, in.FollowedUserId)
 	if err != nil {
-		l.Logger.Errorf("[Follow] FollowModel.FindByUserIDAndFollowedUserID err: %v req: %v", err, in)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 	if follow != nil && follow.FollowStatus == types.FollowStatusFollow {
 		return resp, nil
@@ -78,40 +87,20 @@ func (l *FollowLogic) Follow(in *user.FollowRequest) (resp *user.FollowResponse,
 		return model.NewFollowCountModel(tx).IncrFansCount(l.ctx, in.FollowedUserId)
 	})
 	if err != nil {
-		l.Logger.Errorf("[Follow] Transaction error: %v", err)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
+
 	followExist, err := l.svcCtx.BizRedis.ExistsCtx(l.ctx, userFollowKey(in.UserId))
-	if err != nil {
-		l.Logger.Errorf("[Follow] Redis Exists error: %v", err)
-		return nil, err
-	}
-	if followExist {
-		_, err = l.svcCtx.BizRedis.ZaddCtx(l.ctx, userFollowKey(in.UserId), time.Now().Unix(), strconv.FormatInt(in.FollowedUserId, 10))
-		if err != nil {
-			l.Logger.Errorf("[Follow] Redis Zadd error: %v", err)
-			return nil, err
-		}
-		_, err = l.svcCtx.BizRedis.ZremrangebyrankCtx(l.ctx, userFollowKey(in.UserId), 0, -(types.CacheMaxFollowCount + 1))
-		if err != nil {
-			l.Logger.Errorf("[Follow] Redis Zremrangebyrank error: %v", err)
-		}
+	if err == nil && followExist {
+		_, _ = l.svcCtx.BizRedis.ZaddCtx(l.ctx, userFollowKey(in.UserId), time.Now().Unix(), strconv.FormatInt(in.FollowedUserId, 10))
+		_, _ = l.svcCtx.BizRedis.ZremrangebyrankCtx(l.ctx, userFollowKey(in.UserId), 0, -(types.CacheMaxFollowCount + 1))
 	}
 	fansExist, err := l.svcCtx.BizRedis.ExistsCtx(l.ctx, userFansKey(in.FollowedUserId))
-	if err != nil {
-		l.Logger.Errorf("[Follow] Redis Exists error: %v", err)
-		return nil, err
-	}
-	if fansExist {
-		_, err = l.svcCtx.BizRedis.ZaddCtx(l.ctx, userFansKey(in.FollowedUserId), time.Now().Unix(), strconv.FormatInt(in.UserId, 10))
-		if err != nil {
-			l.Logger.Errorf("[Follow] Redis Zadd error: %v", err)
-			return nil, err
-		}
-		_, err = l.svcCtx.BizRedis.ZremrangebyrankCtx(l.ctx, userFansKey(in.FollowedUserId), 0, -(types.CacheMaxFansCount + 1))
-		if err != nil {
-			l.Logger.Errorf("[Follow] Redis Zremrangebyrank error: %v", err)
-		}
+	if err == nil && fansExist {
+		_, _ = l.svcCtx.BizRedis.ZaddCtx(l.ctx, userFansKey(in.FollowedUserId), time.Now().Unix(), strconv.FormatInt(in.UserId, 10))
+		_, _ = l.svcCtx.BizRedis.ZremrangebyrankCtx(l.ctx, userFansKey(in.FollowedUserId), 0, -(types.CacheMaxFansCount + 1))
 	}
 
 	threading.GoSafe(func() {
@@ -126,12 +115,9 @@ func (l *FollowLogic) Follow(in *user.FollowRequest) (resp *user.FollowResponse,
 		}
 		data, err := json.Marshal(notif)
 		if err != nil {
-			l.Logger.Errorf("[Follow] marshal notification err: %v", err)
 			return
 		}
-		if err := l.svcCtx.NotificationPusher.Push(context.Background(), string(data)); err != nil {
-			l.Logger.Errorf("[Follow] push notification err: %v", err)
-		}
+		_ = l.svcCtx.NotificationPusher.Push(context.Background(), string(data))
 	})
 
 	return resp, nil

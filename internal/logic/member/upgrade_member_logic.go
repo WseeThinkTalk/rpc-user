@@ -26,24 +26,35 @@ func NewUpgradeMemberLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Upg
 
 func (l *UpgradeMemberLogic) UpgradeMember(in *user.UpgradeMemberRequest) (resp *user.UpgradeMemberResponse, err error) {
 	resp = new(user.UpgradeMemberResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 
 	if in.UserId == 0 {
-		return nil, code.MemberUserIdEmpty
+		resp.Code = int64(code.MemberUserIdEmpty.Code())
+		resp.Msg = code.MemberUserIdEmpty.Message()
+		return resp, nil
 	}
 	if in.Level < types.MemberLevelGold || in.Level > types.MemberLevelDiamond {
-		return nil, code.LevelInvalid
+		resp.Code = int64(code.LevelInvalid.Code())
+		resp.Msg = code.LevelInvalid.Message()
+		return resp, nil
 	}
 	if in.TransactionId == "" {
-		return nil, code.TransactionIdEmpty
+		resp.Code = int64(code.TransactionIdEmpty.Code())
+		resp.Msg = code.TransactionIdEmpty.Message()
+		return resp, nil
 	}
 
 	existing, err := l.svcCtx.MemberOrderModel.FindByTransactionId(l.ctx, in.TransactionId)
 	if err != nil {
-		l.Errorf("[UpgradeMember] FindByTransactionId err: %v txId: %s", err, in.TransactionId)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 	if existing != nil {
-		return nil, code.DuplicateTransaction
+		resp.Code = int64(code.DuplicateTransaction.Code())
+		resp.Msg = code.DuplicateTransaction.Message()
+		return resp, nil
 	}
 
 	now := time.Now()
@@ -92,8 +103,9 @@ func (l *UpgradeMemberLogic) UpgradeMember(in *user.UpgradeMemberRequest) (resp 
 		}).Error
 	})
 	if err != nil {
-		l.Errorf("[UpgradeMember] Transaction err: %v userId: %d", err, in.UserId)
-		return nil, code.PaymentFailed
+		resp.Code = int64(code.PaymentFailed.Code())
+		resp.Msg = code.PaymentFailed.Message()
+		return resp, nil
 	}
 
 	return resp, nil

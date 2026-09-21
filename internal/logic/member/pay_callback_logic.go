@@ -31,21 +31,30 @@ func NewPayCallbackLogic(ctx context.Context, svcCtx *svc.ServiceContext) *PayCa
 
 func (l *PayCallbackLogic) PayCallback(in *user.PayCallbackRequest) (resp *user.PayCallbackResponse, err error) {
 	resp = new(user.PayCallbackResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 
 	if in.OrderSn == "" {
-		return nil, code.OrderSnEmpty
+		resp.Code = int64(code.OrderSnEmpty.Code())
+		resp.Msg = code.OrderSnEmpty.Message()
+		return resp, nil
 	}
 	if in.TransactionId == "" {
-		return nil, code.TransactionIdEmpty
+		resp.Code = int64(code.TransactionIdEmpty.Code())
+		resp.Msg = code.TransactionIdEmpty.Message()
+		return resp, nil
 	}
 
 	order, err := l.svcCtx.MemberOrderModel.FindByOrderSn(l.ctx, in.OrderSn)
 	if err != nil {
-		l.Errorf("[PayCallback] FindByOrderSn err: %v, orderSn: %s", err, in.OrderSn)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 	if order == nil {
-		return nil, code.OrderNotFound
+		resp.Code = int64(code.OrderNotFound.Code())
+		resp.Msg = code.OrderNotFound.Message()
+		return resp, nil
 	}
 
 	if order.Status == types.OrderStatusPaid {
@@ -84,8 +93,9 @@ func (l *PayCallbackLogic) PayCallback(in *user.PayCallbackRequest) (resp *user.
 		return memberModel.UpsertMember(l.ctx, newMember)
 	})
 	if err != nil {
-		l.Errorf("[PayCallback] Transaction err: %v, orderSn: %s", err, in.OrderSn)
-		return nil, code.PaymentFailed
+		resp.Code = int64(code.PaymentFailed.Code())
+		resp.Msg = code.PaymentFailed.Message()
+		return resp, nil
 	}
 
 	return resp, nil

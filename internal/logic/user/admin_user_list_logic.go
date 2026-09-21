@@ -25,12 +25,17 @@ func NewAdminUserListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Adm
 
 func (l *AdminUserListLogic) AdminUserList(in *user.AdminUserListRequest) (resp *user.AdminUserListResponse, err error) {
 	resp = new(user.AdminUserListResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 	resp.Data = new(user.AdminUserListData)
 	resp.Data.Users = make([]*user.UserInfoData, 0)
 
 	users, err := l.svcCtx.UserModel.FindAll(l.ctx, in.Keyword, in.Cursor, in.PageSize)
 	if err != nil {
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		resp.Data = nil
+		return resp, nil
 	}
 
 	var isEnd bool

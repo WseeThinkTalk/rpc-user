@@ -23,11 +23,16 @@ func NewMemberOrderListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *M
 
 func (l *MemberOrderListLogic) MemberOrderList(in *user.MemberOrderListRequest) (resp *user.MemberOrderListResponse, err error) {
 	resp = new(user.MemberOrderListResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 	resp.Data = new(user.MemberOrderListData)
 	resp.Data.Items = make([]*user.MemberOrderItem, 0)
 
 	if in.UserId == 0 {
-		return nil, code.MemberUserIdEmpty
+		resp.Code = int64(code.MemberUserIdEmpty.Code())
+		resp.Msg = code.MemberUserIdEmpty.Message()
+		resp.Data = nil
+		return resp, nil
 	}
 	if in.PageSize == 0 {
 		in.PageSize = types.DefaultPageSize
@@ -35,8 +40,10 @@ func (l *MemberOrderListLogic) MemberOrderList(in *user.MemberOrderListRequest) 
 
 	orders, err := l.svcCtx.MemberOrderModel.FindByUserId(l.ctx, in.UserId, in.Cursor, in.PageSize+1)
 	if err != nil {
-		l.Errorf("[MemberOrderList] FindByUserId err: %v userId: %d", err, in.UserId)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		resp.Data = nil
+		return resp, nil
 	}
 
 	var isEnd bool

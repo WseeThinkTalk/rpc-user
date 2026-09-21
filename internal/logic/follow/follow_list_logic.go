@@ -33,11 +33,16 @@ func NewFollowListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Follow
 
 func (l *FollowListLogic) FollowList(in *user.FollowListRequest) (resp *user.FollowListResponse, err error) {
 	resp = new(user.FollowListResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 	resp.Data = new(user.FollowListData)
 	resp.Data.Items = make([]*user.FollowItem, 0)
 
 	if in.UserId == 0 {
-		return nil, code.UserIdEmpty
+		resp.Code = int64(code.UserIdEmpty.Code())
+		resp.Msg = code.UserIdEmpty.Message()
+		resp.Data = nil
+		return resp, nil
 	}
 	if in.PageSize == 0 {
 		in.PageSize = types.DefaultPageSize
@@ -66,8 +71,10 @@ func (l *FollowListLogic) FollowList(in *user.FollowListRequest) (resp *user.Fol
 		}
 		follows, err = l.svcCtx.FollowModel.FindByFollowedUserIds(l.ctx, in.UserId, followUserIds)
 		if err != nil {
-			l.Logger.Errorf("[FollowList] FollowModel.FindByFollowedUserIds error: %v req: %v", err, in)
-			return nil, err
+			resp.Code = 500
+			resp.Msg = err.Error()
+			resp.Data = nil
+			return resp, nil
 		}
 		for _, follow := range follows {
 			followedUserIds = append(followedUserIds, follow.FollowedUserID)
@@ -80,8 +87,10 @@ func (l *FollowListLogic) FollowList(in *user.FollowListRequest) (resp *user.Fol
 	} else {
 		follows, err = l.svcCtx.FollowModel.FindByUserId(l.ctx, in.UserId, types.CacheMaxFollowCount)
 		if err != nil {
-			l.Logger.Errorf("[FollowList] FollowModel.FindByUserId error: %v req: %v", err, in)
-			return nil, err
+			resp.Code = 500
+			resp.Msg = err.Error()
+			resp.Data = nil
+			return resp, nil
 		}
 		if len(follows) == 0 {
 			return resp, nil
@@ -117,9 +126,7 @@ func (l *FollowListLogic) FollowList(in *user.FollowListRequest) (resp *user.Fol
 		}
 	}
 	fc, err := l.svcCtx.FollowCountModel.FindByUserIds(l.ctx, followedUserIds)
-	if err != nil {
-		l.Logger.Errorf("[FollowList] FollowCountModel.FindByUserIds error: %v followedUserIds: %v", err, followedUserIds)
-	}
+	_ = err
 	uidFansCount := make(map[int64]int)
 	for _, f := range fc {
 		uidFansCount[f.UserID] = f.FansCount
@@ -139,9 +146,7 @@ func (l *FollowListLogic) FollowList(in *user.FollowListRequest) (resp *user.Fol
 			if len(follows) < types.CacheMaxFollowCount && len(follows) > 0 {
 				follows = append(follows, &model.Follow{FollowedUserID: -1})
 			}
-			if err := l.addCacheFollow(context.Background(), in.UserId, follows); err != nil {
-				logx.Errorf("addCacheFollow error: %v", err)
-			}
+			_ = l.addCacheFollow(context.Background(), in.UserId, follows)
 		})
 	}
 
@@ -151,25 +156,17 @@ func (l *FollowListLogic) FollowList(in *user.FollowListRequest) (resp *user.Fol
 func (l *FollowListLogic) cacheFollowUserIds(ctx context.Context, userId, cursor, pageSize int64) ([]int64, error) {
 	key := userFollowKey(userId)
 	b, err := l.svcCtx.BizRedis.ExistsCtx(ctx, key)
-	if err != nil {
-		logx.Errorf("[cacheFollowUserIds] BizRedis.ExistsCtx error: %v", err)
-	}
-	if b {
-		err = l.svcCtx.BizRedis.ExpireCtx(ctx, key, userFollowExpireTime)
-		if err != nil {
-			logx.Errorf("[cacheFollowUserIds] BizRedis.ExpireCtx error: %v", err)
-		}
+	if err == nil && b {
+		_ = l.svcCtx.BizRedis.ExpireCtx(ctx, key, userFollowExpireTime)
 	}
 	pairs, err := l.svcCtx.BizRedis.ZrevrangebyscoreWithScoresAndLimitCtx(ctx, key, 0, cursor, 0, int(pageSize))
 	if err != nil {
-		logx.Errorf("[cacheFollowUserIds] BizRedis.ZrevrangebyscoreWithScoresAndLimitCtx error: %v", err)
 		return nil, err
 	}
 	var uids []int64
 	for _, pair := range pairs {
 		uid, err := strconv.ParseInt(pair.Key, 10, 64)
 		if err != nil {
-			logx.Errorf("[cacheFollowUserIds] strconv.ParseInt error: %v", err)
 			continue
 		}
 		uids = append(uids, uid)
@@ -192,7 +189,6 @@ func (l *FollowListLogic) addCacheFollow(ctx context.Context, userId int64, foll
 		}
 		_, err := l.svcCtx.BizRedis.ZaddCtx(ctx, key, score, strconv.FormatInt(follow.FollowedUserID, 10))
 		if err != nil {
-			logx.Errorf("[addCacheFollow] BizRedis.ZaddCtx error: %v", err)
 			return err
 		}
 	}

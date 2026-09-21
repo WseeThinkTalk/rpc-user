@@ -31,7 +31,6 @@ func NewRegisterLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Register
 func hashPassword(password string) string {
 	hash, err := encrypt.HashPassword(password)
 	if err != nil {
-		logx.Errorf("HashPassword error: %v", err)
 		return encrypt.MD5Password(password)
 	}
 	return hash
@@ -39,10 +38,15 @@ func hashPassword(password string) string {
 
 func (l *RegisterLogic) Register(in *user.RegisterRequest) (resp *user.RegisterResponse, err error) {
 	resp = new(user.RegisterResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 	resp.Data = new(user.RegisterData)
 
 	if len(in.Username) == 0 {
-		return nil, code.RegisterNameEmpty
+		resp.Code = int64(code.RegisterNameEmpty.Code())
+		resp.Msg = code.RegisterNameEmpty.Message()
+		resp.Data = nil
+		return resp, nil
 	}
 
 	ret, err := l.svcCtx.UserModel.Insert(l.ctx, &model.User{
@@ -55,13 +59,17 @@ func (l *RegisterLogic) Register(in *user.RegisterRequest) (resp *user.RegisterR
 		UpdateTime: time.Now(),
 	})
 	if err != nil {
-		logx.Errorf("Register req: %v error: %v", in, err)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		resp.Data = nil
+		return resp, nil
 	}
 	userId, err := ret.LastInsertId()
 	if err != nil {
-		logx.Errorf("LastInsertId error: %v", err)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		resp.Data = nil
+		return resp, nil
 	}
 
 	resp.Data.UserId = userId

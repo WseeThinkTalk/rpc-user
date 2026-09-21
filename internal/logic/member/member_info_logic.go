@@ -23,16 +23,23 @@ func NewMemberInfoLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Member
 
 func (l *MemberInfoLogic) MemberInfo(in *user.MemberInfoRequest) (resp *user.MemberInfoResponse, err error) {
 	resp = new(user.MemberInfoResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 	resp.Data = new(user.MemberInfoData)
 
 	if in.UserId == 0 {
-		return nil, code.MemberUserIdEmpty
+		resp.Code = int64(code.MemberUserIdEmpty.Code())
+		resp.Msg = code.MemberUserIdEmpty.Message()
+		resp.Data = nil
+		return resp, nil
 	}
 
 	m, err := l.svcCtx.MemberModel.FindByUserId(l.ctx, in.UserId)
 	if err != nil {
-		l.Errorf("[MemberInfo] FindByUserId err: %v userId: %d", err, in.UserId)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		resp.Data = nil
+		return resp, nil
 	}
 	if m == nil {
 		resp.Data.UserId = in.UserId

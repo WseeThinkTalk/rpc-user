@@ -24,16 +24,23 @@ func NewCheckMemberRightLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 
 func (l *CheckMemberRightLogic) CheckMemberRight(in *user.CheckMemberRightRequest) (resp *user.CheckMemberRightResponse, err error) {
 	resp = new(user.CheckMemberRightResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 	resp.Data = new(user.CheckMemberRightData)
 
 	if in.UserId == 0 {
-		return nil, code.MemberUserIdEmpty
+		resp.Code = int64(code.MemberUserIdEmpty.Code())
+		resp.Msg = code.MemberUserIdEmpty.Message()
+		resp.Data = nil
+		return resp, nil
 	}
 
 	m, err := l.svcCtx.MemberModel.FindByUserId(l.ctx, in.UserId)
 	if err != nil {
-		l.Errorf("[CheckMemberRight] FindByUserId err: %v userId: %d", err, in.UserId)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		resp.Data = nil
+		return resp, nil
 	}
 
 	if m == nil || m.Status != types.MemberStatusActive || m.ExpireTime.Before(time.Now()) {

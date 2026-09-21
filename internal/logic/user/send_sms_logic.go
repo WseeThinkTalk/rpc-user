@@ -25,6 +25,8 @@ func NewSendSmsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *SendSmsLo
 
 func (l *SendSmsLogic) SendSms(in *user.SendSmsRequest) (resp *user.SendSmsResponse, err error) {
 	resp = new(user.SendSmsResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 
 	return resp, nil
 }

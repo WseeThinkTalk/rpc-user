@@ -33,11 +33,16 @@ func NewFansListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *FansList
 
 func (l *FansListLogic) FansList(in *user.FansListRequest) (resp *user.FansListResponse, err error) {
 	resp = new(user.FansListResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 	resp.Data = new(user.FansListData)
 	resp.Data.Items = make([]*user.FansItem, 0)
 
 	if in.UserId == 0 {
-		return nil, code.UserIdEmpty
+		resp.Code = int64(code.UserIdEmpty.Code())
+		resp.Msg = code.UserIdEmpty.Message()
+		resp.Data = nil
+		return resp, nil
 	}
 	if in.PageSize == 0 {
 		in.PageSize = types.DefaultPageSize
@@ -64,8 +69,10 @@ func (l *FansListLogic) FansList(in *user.FansListRequest) (resp *user.FansListR
 		}
 		fansModel, err = l.svcCtx.FollowModel.FindByUserIds(l.ctx, in.UserId, fansUIds)
 		if err != nil {
-			l.Logger.Errorf("[FansList] FollowModel.FindByUserIds error: %v req: %v", err, in)
-			return nil, err
+			resp.Code = 500
+			resp.Msg = err.Error()
+			resp.Data = nil
+			return resp, nil
 		}
 		fansMap := make(map[int64]*model.Follow)
 		for _, f := range fansModel {
@@ -85,8 +92,10 @@ func (l *FansListLogic) FansList(in *user.FansListRequest) (resp *user.FansListR
 	} else {
 		fansModel, err = l.svcCtx.FollowModel.FindByFollowedUserId(l.ctx, in.UserId, types.CacheMaxFansCount)
 		if err != nil {
-			l.Logger.Errorf("[FansList] FollowModel.FindByFollowedUserId error: %v req: %v", err, in)
-			return nil, err
+			resp.Code = 500
+			resp.Msg = err.Error()
+			resp.Data = nil
+			return resp, nil
 		}
 		if len(fansModel) == 0 {
 			return resp, nil
@@ -126,9 +135,7 @@ func (l *FansListLogic) FansList(in *user.FansListRequest) (resp *user.FansListR
 		}
 	}
 	fc, err := l.svcCtx.FollowCountModel.FindByUserIds(l.ctx, fansUserIds)
-	if err != nil {
-		l.Logger.Errorf("[FansList] FollowCountModel.FindByUserIds error: %v fansUserIds: %v", err, fansUserIds)
-	}
+	_ = err
 	uidFansCount := make(map[int64]int)
 	uidFollowCount := make(map[int64]int)
 	for _, f := range fc {
@@ -151,9 +158,7 @@ func (l *FansListLogic) FansList(in *user.FansListRequest) (resp *user.FansListR
 			if len(fansModel) < types.CacheMaxFansCount && len(fansModel) > 0 {
 				fansModel = append(fansModel, &model.Follow{UserID: -1})
 			}
-			if err := l.addCacheFans(context.Background(), in.UserId, fansModel); err != nil {
-				logx.Errorf("addCacheFans error: %v", err)
-			}
+			_ = l.addCacheFans(context.Background(), in.UserId, fansModel)
 		})
 	}
 
@@ -163,18 +168,11 @@ func (l *FansListLogic) FansList(in *user.FansListRequest) (resp *user.FansListR
 func (l *FansListLogic) cacheFansUserIds(ctx context.Context, userId, cursor, pageSize int64) ([]int64, int64, error) {
 	key := userFansKey(userId)
 	b, err := l.svcCtx.BizRedis.ExistsCtx(ctx, key)
-	if err != nil {
-		logx.Errorf("[cacheFansUserIds] BizRedis.ExistsCtx error: %v", err)
-	}
-	if b {
-		err = l.svcCtx.BizRedis.ExpireCtx(ctx, key, userFansExpireTime)
-		if err != nil {
-			logx.Errorf("[cacheFansUserIds] BizRedis.ExpireCtx error: %v", err)
-		}
+	if err == nil && b {
+		_ = l.svcCtx.BizRedis.ExpireCtx(ctx, key, userFansExpireTime)
 	}
 	pairs, err := l.svcCtx.BizRedis.ZrevrangebyscoreWithScoresAndLimitCtx(ctx, key, 0, cursor, 0, int(pageSize))
 	if err != nil {
-		logx.Errorf("[cacheFansUserIds] BizRedis.ZrevrangebyscoreWithScoresAndLimitCtx error: %v", err)
 		return nil, 0, err
 	}
 	var uids []int64
@@ -182,7 +180,6 @@ func (l *FansListLogic) cacheFansUserIds(ctx context.Context, userId, cursor, pa
 	for _, pair := range pairs {
 		uid, err := strconv.ParseInt(pair.Key, 10, 64)
 		if err != nil {
-			logx.Errorf("[cacheFansUserIds] strconv.ParseInt error: %v", err)
 			continue
 		}
 		score = pair.Score
@@ -206,7 +203,6 @@ func (l *FansListLogic) addCacheFans(ctx context.Context, userId int64, follows 
 		}
 		_, err := l.svcCtx.BizRedis.ZaddCtx(ctx, key, score, strconv.FormatInt(follow.UserID, 10))
 		if err != nil {
-			logx.Errorf("[addCacheFans] BizRedis.ZaddCtx error: %v", err)
 			return err
 		}
 	}

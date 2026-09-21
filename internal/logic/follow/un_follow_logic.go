@@ -30,18 +30,25 @@ func NewUnFollowLogic(ctx context.Context, svcCtx *svc.ServiceContext) *UnFollow
 
 func (l *UnFollowLogic) UnFollow(in *user.UnFollowRequest) (resp *user.UnFollowResponse, err error) {
 	resp = new(user.UnFollowResponse)
+	resp.Code = 200
+	resp.Msg = "success"
 
 	if in.UserId == 0 {
-		return nil, code.FollowUserIdEmpty
+		resp.Code = int64(code.FollowUserIdEmpty.Code())
+		resp.Msg = code.FollowUserIdEmpty.Message()
+		return resp, nil
 	}
 	if in.FollowedUserId == 0 {
-		return nil, code.FollowedUserIdEmpty
+		resp.Code = int64(code.FollowedUserIdEmpty.Code())
+		resp.Msg = code.FollowedUserIdEmpty.Message()
+		return resp, nil
 	}
 
 	follow, err := l.svcCtx.FollowModel.FindByUserIDAndFollowedUserID(l.ctx, in.UserId, in.FollowedUserId)
 	if err != nil {
-		l.Logger.Errorf("[UnFollow] FollowModel.FindByUserIDAndFollowedUserID err: %v req: %v", err, in)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 	if follow == nil || follow.FollowStatus == types.FollowStatusUnfollow {
 		return resp, nil
@@ -61,33 +68,18 @@ func (l *UnFollowLogic) UnFollow(in *user.UnFollowRequest) (resp *user.UnFollowR
 		return model.NewFollowCountModel(tx).DecrFansCount(l.ctx, in.FollowedUserId)
 	})
 	if err != nil {
-		l.Logger.Errorf("[UnFollow] Transaction error: %v", err)
-		return nil, err
+		resp.Code = 500
+		resp.Msg = err.Error()
+		return resp, nil
 	}
 
 	followExist, err := l.svcCtx.BizRedis.ExistsCtx(l.ctx, userFollowKey(in.UserId))
-	if err != nil {
-		l.Logger.Errorf("[UnFollow] Redis Exists error: %v", err)
-		return nil, err
-	}
-	if followExist {
-		_, err = l.svcCtx.BizRedis.ZremCtx(l.ctx, userFollowKey(in.UserId), strconv.FormatInt(in.FollowedUserId, 10))
-		if err != nil {
-			l.Logger.Errorf("[UnFollow] Redis Zrem error: %v", err)
-			return nil, err
-		}
+	if err == nil && followExist {
+		_, _ = l.svcCtx.BizRedis.ZremCtx(l.ctx, userFollowKey(in.UserId), strconv.FormatInt(in.FollowedUserId, 10))
 	}
 	fansExist, err := l.svcCtx.BizRedis.ExistsCtx(l.ctx, userFansKey(in.FollowedUserId))
-	if err != nil {
-		l.Logger.Errorf("[UnFollow] Redis Exists error: %v", err)
-		return nil, err
-	}
-	if fansExist {
-		_, err = l.svcCtx.BizRedis.ZremCtx(l.ctx, userFansKey(in.FollowedUserId), strconv.FormatInt(in.UserId, 10))
-		if err != nil {
-			l.Logger.Errorf("[UnFollow] Redis Zrem error: %v", err)
-			return nil, err
-		}
+	if err == nil && fansExist {
+		_, _ = l.svcCtx.BizRedis.ZremCtx(l.ctx, userFansKey(in.FollowedUserId), strconv.FormatInt(in.UserId, 10))
 	}
 
 	return resp, nil
