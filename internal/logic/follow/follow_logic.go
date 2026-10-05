@@ -32,6 +32,7 @@ func NewFollowLogic(ctx context.Context, svcCtx *svc.ServiceContext) *FollowLogi
 	}
 }
 
+// Follow 关注指定用户
 func (l *FollowLogic) Follow(in *user.FollowRequest) (resp *user.FollowResponse, err error) {
 	resp = new(user.FollowResponse)
 
@@ -50,6 +51,8 @@ func (l *FollowLogic) Follow(in *user.FollowRequest) (resp *user.FollowResponse,
 		resp.Msg = code.CannotFollowSelf.Message()
 		return resp, nil
 	}
+
+	// 查询已有关注记录
 	follow, err := l.svcCtx.FollowModel.FindByUserIDAndFollowedUserID(l.ctx, in.UserId, in.FollowedUserId)
 	if err != nil {
 		resp.Code = int64(code.ServerErr.Code())
@@ -60,6 +63,7 @@ func (l *FollowLogic) Follow(in *user.FollowRequest) (resp *user.FollowResponse,
 		return resp, nil
 	}
 
+	// 事务更新关注关系与计数
 	err = l.svcCtx.DB.Transaction(func(tx *gorm.DB) error {
 		if follow != nil {
 			err = model.NewFollowModel(tx).UpdateFields(l.ctx, follow.ID, map[string]interface{}{
@@ -90,6 +94,7 @@ func (l *FollowLogic) Follow(in *user.FollowRequest) (resp *user.FollowResponse,
 		return resp, nil
 	}
 
+	// 更新关注与粉丝缓存
 	followExist, err := l.svcCtx.BizRedis.ExistsCtx(l.ctx, userFollowKey(in.UserId))
 	if err == nil && followExist {
 		_, _ = l.svcCtx.BizRedis.ZaddCtx(l.ctx, userFollowKey(in.UserId), time.Now().Unix(), strconv.FormatInt(in.FollowedUserId, 10))
@@ -101,6 +106,7 @@ func (l *FollowLogic) Follow(in *user.FollowRequest) (resp *user.FollowResponse,
 		_, _ = l.svcCtx.BizRedis.ZremrangebyrankCtx(l.ctx, userFansKey(in.FollowedUserId), 0, -(types.CacheMaxFansCount + 1))
 	}
 
+	// 异步发送关注通知
 	threading.GoSafe(func() {
 		notif := map[string]interface{}{
 			"userId":        in.FollowedUserId,
