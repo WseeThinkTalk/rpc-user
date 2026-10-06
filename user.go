@@ -10,6 +10,7 @@ import (
 	memberserver "rpc-user/internal/server/member"
 	userserver "rpc-user/internal/server/user"
 	"rpc-user/internal/svc"
+	pbuser "rpc-user/pb/user"
 	"rpc-user/pkg/lib/etcdx"
 	"rpc-user/pkg/lib/zapx"
 	"rpc-user/user"
@@ -63,9 +64,24 @@ func main() {
 
 // registerServer 注册 RPC 服务
 func registerServer(ctx *svc.ServiceContext, grpcServer grpc.ServiceRegistrar) {
-	user.RegisterUserServer(grpcServer, userserver.NewUserServer(ctx))
-	user.RegisterMemberServer(grpcServer, memberserver.NewMemberServer(ctx))
-	user.RegisterFollowServer(grpcServer, followserver.NewFollowServer(ctx))
+	uSrv := userserver.NewUserServer(ctx)
+	mSrv := memberserver.NewMemberServer(ctx)
+	fSrv := followserver.NewFollowServer(ctx)
+
+	user.RegisterUserServer(grpcServer, uSrv)
+	user.RegisterMemberServer(grpcServer, mSrv)
+	user.RegisterFollowServer(grpcServer, fSrv)
+
+	// 兼容旧版客户端 (api-thinktalk) 调用的服务命名空间
+	pbuser.RegisterUserServer(grpcServer, userserver.NewLegacyUserServer(ctx))
+
+	mDesc := user.Member_ServiceDesc
+	mDesc.ServiceName = "pb.Member"
+	grpcServer.RegisterService(&mDesc, mSrv)
+
+	fDesc := user.Follow_ServiceDesc
+	fDesc.ServiceName = "service.Follow"
+	grpcServer.RegisterService(&fDesc, fSrv)
 }
 
 // unaryServerInterceptor grpc 拦截器
