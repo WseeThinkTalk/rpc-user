@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-package service;
-option go_package="./service";
+package user;
+option go_package = "api-thinktalk/client/user/service;service";
 
 service User {
   rpc Register(RegisterRequest) returns (RegisterResponse);
@@ -13,7 +13,6 @@ service User {
   rpc AdminUserList(AdminUserListRequest) returns (AdminUserListResponse);
 }
 
-
 message RegisterRequest {
   string username = 1;
   string mobile = 2;
@@ -21,15 +20,21 @@ message RegisterRequest {
   string password = 4;
 }
 
-message RegisterResponse {
+message RegisterData {
   int64 userId = 1;
+}
+
+message RegisterResponse {
+  int64 code = 1;
+  string msg = 2;
+  RegisterData data = 3;
 }
 
 message FindByIdRequest {
   int64 userId = 1;
 }
 
-message FindByIdResponse {
+message UserInfoData {
   int64 userId = 1;
   string username = 2;
   string mobile = 3;
@@ -41,11 +46,17 @@ message FindByIdResponse {
   string profileCover = 9;
 }
 
+message FindByIdResponse {
+  int64 code = 1;
+  string msg = 2;
+  UserInfoData data = 3;
+}
+
 message FindByMobileRequest {
   string mobile = 1;
 }
 
-message FindByMobileResponse {
+message UserAuthData {
   int64 userId = 1;
   string username = 2;
   string mobile = 3;
@@ -54,12 +65,20 @@ message FindByMobileResponse {
   int64 role = 6;
 }
 
+message FindByMobileResponse {
+  int64 code = 1;
+  string msg = 2;
+  UserAuthData data = 3;
+}
+
 message SendSmsRequest {
   int64 userId = 1;
   string mobile = 2;
 }
 
 message SendSmsResponse {
+  int64 code = 1;
+  string msg = 2;
 }
 
 message UpdateProfileRequest {
@@ -72,6 +91,8 @@ message UpdateProfileRequest {
 }
 
 message UpdateProfileResponse {
+  int64 code = 1;
+  string msg = 2;
 }
 
 message UpgradePasswordRequest {
@@ -80,6 +101,8 @@ message UpgradePasswordRequest {
 }
 
 message UpgradePasswordResponse {
+  int64 code = 1;
+  string msg = 2;
 }
 
 message AdminUserListRequest {
@@ -88,21 +111,14 @@ message AdminUserListRequest {
   int64 pageSize = 3;
 }
 
-message AdminUserItem {
-  int64 userId = 1;
-  string username = 2;
-  string mobile = 3;
-  string avatar = 4;
-  int64 role = 5;
-  string displayId = 6;
-  string bio = 7;
-  int32 gender = 8;
-  string profileCover = 9;
-  int64 createTime = 10;
+message AdminUserListData {
+  repeated UserInfoData users = 1;
+  int64 cursor = 2;
+  bool isEnd = 3;
 }
 
 message AdminUserListResponse {
-  repeated AdminUserItem items = 1;
-  int64 cursor = 2;
-  bool isEnd = 3;
+  int64 code = 1;
+  string msg = 2;
+  AdminUserListData data = 3;
 }

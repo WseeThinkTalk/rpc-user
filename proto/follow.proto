@@ -1,25 +1,23 @@
 syntax = "proto3";
 
-package service;
-option go_package="./pb";
+package user;
+option go_package = "api-thinktalk/client/follow/pb;pb";
 
 service Follow {
-  // 关注
-  rpc Follow (FollowRequest) returns (FollowResponse);
-  // 取消关注
-  rpc UnFollow (UnFollowRequest) returns (UnFollowResponse);
-  // 关注列表
-  rpc FollowList (FollowListRequest) returns (FollowListResponse);
-  // 粉丝列表
-  rpc FansList (FansListRequest) returns (FansListResponse);
+  rpc Follow(FollowRequest) returns (FollowResponse);
+  rpc UnFollow(UnFollowRequest) returns (UnFollowResponse);
+  rpc FollowList(FollowListRequest) returns (FollowListResponse);
+  rpc FansList(FansListRequest) returns (FansListResponse);
 }
 
 message FollowRequest {
-  int64 userId = 1; // 关注者
-  int64 followedUserId = 2; // 被关注者
+  int64 userId = 1;
+  int64 followedUserId = 2;
 }
 
 message FollowResponse {
+  int64 code = 1;
+  string msg = 2;
 }
 
 message UnFollowRequest {
@@ -28,47 +26,62 @@ message UnFollowRequest {
 }
 
 message UnFollowResponse {
+  int64 code = 1;
+  string msg = 2;
 }
 
 message FollowListRequest {
-  int64 Id = 1;
+  int64 id = 1;
   int64 userId = 2;
   int64 cursor = 3;
   int64 pageSize = 4;
 }
 
 message FollowItem {
-  int64 Id = 1;
-  int64 followedUserId = 2; // 被关注者
-  int64 fansCount = 3; // 粉丝数
-  int64 createTime = 4; // 关注时间
+  int64 id = 1;
+  int64 followedUserId = 2;
+  int64 fansCount = 3;
+  int64 createTime = 4;
 }
 
-message FollowListResponse {
+message FollowListData {
   repeated FollowItem items = 1;
   int64 cursor = 2;
   bool isEnd = 3;
-  int64 Id = 4;
+  int64 id = 4;
+}
+
+message FollowListResponse {
+  int64 code = 1;
+  string msg = 2;
+  FollowListData data = 3;
 }
 
 message FansListRequest {
-  int64 userId = 1;
-  int64 cursor = 2;
-  int64 pageSize = 3;
-  int64 Id = 4;
+  int64 id = 1;
+  int64 userId = 2;
+  int64 cursor = 3;
+  int64 pageSize = 4;
 }
 
 message FansItem {
-  int64 userId = 1;
-  int64 fansUserId = 2;
-  int64 followCount = 3;
-  int64 fansCount = 4;
-  int64 createTime = 5;
+  int64 id = 1;
+  int64 userId = 2;
+  int64 fansUserId = 3;
+  int64 followCount = 4;
+  int64 fansCount = 5;
+  int64 createTime = 6;
 }
 
-message FansListResponse {
+message FansListData {
   repeated FansItem items = 1;
   int64 cursor = 2;
   bool isEnd = 3;
-  int64 Id = 4;
+  int64 id = 4;
+}
+
+message FansListResponse {
+  int64 code = 1;
+  string msg = 2;
+  FansListData data = 3;
 }

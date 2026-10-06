@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-package pb;
-option go_package="./pb";
+package user;
+option go_package = "api-thinktalk/client/member/pb;pb";
 
 service Member {
   rpc MemberInfo(MemberInfoRequest) returns (MemberInfoResponse);
@@ -16,12 +16,18 @@ message MemberInfoRequest {
   int64 userId = 1;
 }
 
-message MemberInfoResponse {
+message MemberInfoData {
   int64 userId = 1;
   int32 level = 2;
   string levelName = 3;
   int64 expireTime = 4;
   int32 status = 5;
+}
+
+message MemberInfoResponse {
+  int64 code = 1;
+  string msg = 2;
+  MemberInfoData data = 3;
 }
 
 message UpgradeMemberRequest {
@@ -33,28 +39,31 @@ message UpgradeMemberRequest {
   string payChannel = 6;
 }
 
-message UpgradeMemberResponse {}
+message UpgradeMemberResponse {
+  int64 code = 1;
+  string msg = 2;
+}
 
 message CheckMemberRightRequest {
   int64 userId = 1;
   string rightKey = 2;
 }
 
-message CheckMemberRightResponse {
+message CheckMemberRightData {
   bool hasRight = 1;
   int32 level = 2;
+}
+
+message CheckMemberRightResponse {
+  int64 code = 1;
+  string msg = 2;
+  CheckMemberRightData data = 3;
 }
 
 message MemberOrderListRequest {
   int64 userId = 1;
   int64 cursor = 2;
   int64 pageSize = 3;
-}
-
-message MemberOrderListResponse {
-  repeated MemberOrderItem items = 1;
-  int64 cursor = 2;
-  bool isEnd = 3;
 }
 
 message MemberOrderItem {
@@ -68,6 +77,18 @@ message MemberOrderItem {
   int64 createTime = 8;
 }
 
+message MemberOrderListData {
+  repeated MemberOrderItem items = 1;
+  int64 cursor = 2;
+  bool isEnd = 3;
+}
+
+message MemberOrderListResponse {
+  int64 code = 1;
+  string msg = 2;
+  MemberOrderListData data = 3;
+}
+
 message CreateOrderRequest {
   int64 userId = 1;
   int32 level = 2;
@@ -76,9 +97,15 @@ message CreateOrderRequest {
   string payChannel = 5;
 }
 
-message CreateOrderResponse {
+message CreateOrderData {
   string orderSn = 1;
   int64 amount = 2;
+}
+
+message CreateOrderResponse {
+  int64 code = 1;
+  string msg = 2;
+  CreateOrderData data = 3;
 }
 
 message PayCallbackRequest {
@@ -86,4 +113,7 @@ message PayCallbackRequest {
   string transactionId = 2;
 }
 
-message PayCallbackResponse {}
+message PayCallbackResponse {
+  int64 code = 1;
+  string msg = 2;
+}
