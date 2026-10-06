@@ -10,11 +10,10 @@ import (
 	memberserver "rpc-user/internal/server/member"
 	userserver "rpc-user/internal/server/user"
 	"rpc-user/internal/svc"
-	"rpc-user/pkg/env"
+	"rpc-user/pkg/lib/etcdx"
 	"rpc-user/pkg/lib/zapx"
 	"rpc-user/user"
 
-	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/service"
 	"github.com/zeromicro/go-zero/zrpc"
@@ -22,17 +21,22 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-var configFile = flag.String("f", "etc/user.yaml", "the config file")
+func runRemoteConfig() *config.Config {
+	var c config.Config
+	etcdx.MustLoadRemoteConfig("/thinktalk/config/user.rpc", &c)
+	if c.DB.DataSource == "" {
+		c.DB.DataSource = c.DataSource
+	}
+	return &c
+}
 
 func main() {
 	flag.Parse()
 
-	env.LoadEnv()
-
-	var c config.Config
-	conf.MustLoad(*configFile, &c, conf.UseEnv())
-	if c.DB.DataSource == "" {
-		c.DB.DataSource = c.DataSource
+	// 从 Etcd 配置中心拉取远程配置 (Fail-Fast)
+	c := runRemoteConfig()
+	if c == nil {
+		return
 	}
 
 	// init logger
@@ -41,7 +45,7 @@ func main() {
 		logx.SetWriter(writer)
 	}
 
-	ctx := svc.NewServiceContext(c)
+	ctx := svc.NewServiceContext(*c)
 
 	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
 		registerServer(ctx, grpcServer)
