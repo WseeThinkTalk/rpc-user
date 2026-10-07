@@ -24,9 +24,6 @@ import (
 func runRemoteConfig() *config.Config {
 	var c config.Config
 	etcdx.MustLoadRemoteConfig("/thinktalk/config/user.rpc", &c)
-	if c.DB.DataSource == "" {
-		c.DB.DataSource = c.DataSource
-	}
 	return &c
 }
 

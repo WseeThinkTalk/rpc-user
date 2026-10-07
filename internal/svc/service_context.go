@@ -25,27 +25,14 @@ type ServiceContext struct {
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
-	dsn := c.DB.DataSource
-	if dsn == "" {
-		dsn = c.DataSource
-	}
-
 	db := orm.MustNewPostgres(&orm.Config{
-		DSN:          dsn,
+		DSN:          c.DB.DataSource,
 		MaxOpenConns: c.DB.MaxOpenConns,
 		MaxIdleConns: c.DB.MaxIdleConns,
 		MaxLifetime:  c.DB.MaxLifetime,
 	})
 
-	var rds *redis.Redis
-	if c.BizRedis.Host != "" {
-		rds = redis.MustNewRedis(redis.RedisConf{
-			Host:        c.BizRedis.Host,
-			Pass:        c.BizRedis.Pass,
-			Type:        c.BizRedis.Type,
-			PingTimeout: 10000000000,
-		})
-	}
+	rds := redis.MustNewRedis(c.BizRedis)
 
 	var pusher *kq.Pusher
 	if len(c.KqPusherConf.Brokers) > 0 && c.KqPusherConf.Topic != "" {
