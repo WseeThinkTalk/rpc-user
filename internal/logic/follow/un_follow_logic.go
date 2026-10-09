@@ -71,12 +71,8 @@ func (l *UnFollowLogic) UnFollow(in *user.UnFollowRequest) (resp *user.UnFollowR
 		return resp, nil
 	}
 
-	followExist, err := l.svcCtx.BizRedis.ExistsCtx(l.ctx, userFollowKey(in.UserId))
-	if err == nil && followExist {
+	if l.svcCtx.BizRedis != nil {
 		_, _ = l.svcCtx.BizRedis.ZremCtx(l.ctx, userFollowKey(in.UserId), strconv.FormatInt(in.FollowedUserId, 10))
-	}
-	fansExist, err := l.svcCtx.BizRedis.ExistsCtx(l.ctx, userFansKey(in.FollowedUserId))
-	if err == nil && fansExist {
 		_, _ = l.svcCtx.BizRedis.ZremCtx(l.ctx, userFansKey(in.FollowedUserId), strconv.FormatInt(in.UserId, 10))
 	}
 

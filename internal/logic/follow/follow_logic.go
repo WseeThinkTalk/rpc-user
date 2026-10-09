@@ -14,9 +14,34 @@ import (
 	"rpc-user/user"
 
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/core/threading"
 	"gorm.io/gorm"
 )
+
+// checkAndTrimZSetScript 仅当缓存 Key 存在时，原子追加新成员并按容量修剪多余成员
+// 解决传统 Exists -> Zadd -> Zremrangebyrank 非原子 3 次 RTT 导致的冷缓存截断竞态与残缺缓存污染
+var checkAndTrimZSetScript = redis.NewScript(`
+local key = KEYS[1]
+if redis.call("EXISTS", key) == 1 then
+    local score = tonumber(ARGV[1])
+    local member = ARGV[2]
+    local maxCount = tonumber(ARGV[3])
+    redis.call("ZADD", key, score, member)
+    local trimEnd = -(maxCount + 1)
+    redis.call("ZREMRANGEBYRANK", key, 0, trimEnd)
+    return 1
+end
+return 0
+`)
+
+func atomicAddAndTrimZSet(ctx context.Context, rds *redis.Redis, key string, score int64, member string, maxCount int) error {
+	if rds == nil {
+		return nil
+	}
+	_, err := rds.ScriptRunCtx(ctx, checkAndTrimZSetScript, []string{key}, score, member, maxCount)
+	return err
+}
 
 type FollowLogic struct {
 	ctx    context.Context
@@ -94,17 +119,10 @@ func (l *FollowLogic) Follow(in *user.FollowRequest) (resp *user.FollowResponse,
 		return resp, nil
 	}
 
-	// 更新关注与粉丝缓存
-	followExist, err := l.svcCtx.BizRedis.ExistsCtx(l.ctx, userFollowKey(in.UserId))
-	if err == nil && followExist {
-		_, _ = l.svcCtx.BizRedis.ZaddCtx(l.ctx, userFollowKey(in.UserId), time.Now().Unix(), strconv.FormatInt(in.FollowedUserId, 10))
-		_, _ = l.svcCtx.BizRedis.ZremrangebyrankCtx(l.ctx, userFollowKey(in.UserId), 0, -(types.CacheMaxFollowCount + 1))
-	}
-	fansExist, err := l.svcCtx.BizRedis.ExistsCtx(l.ctx, userFansKey(in.FollowedUserId))
-	if err == nil && fansExist {
-		_, _ = l.svcCtx.BizRedis.ZaddCtx(l.ctx, userFansKey(in.FollowedUserId), time.Now().Unix(), strconv.FormatInt(in.UserId, 10))
-		_, _ = l.svcCtx.BizRedis.ZremrangebyrankCtx(l.ctx, userFansKey(in.FollowedUserId), 0, -(types.CacheMaxFansCount + 1))
-	}
+	// 原子更新关注与粉丝缓存（仅当缓存存在时原子追加并修剪，防止残缺冷缓存污染与 3 次 RTT 竞态）
+	nowUnix := time.Now().Unix()
+	_ = atomicAddAndTrimZSet(l.ctx, l.svcCtx.BizRedis, userFollowKey(in.UserId), nowUnix, strconv.FormatInt(in.FollowedUserId, 10), types.CacheMaxFollowCount)
+	_ = atomicAddAndTrimZSet(l.ctx, l.svcCtx.BizRedis, userFansKey(in.FollowedUserId), nowUnix, strconv.FormatInt(in.UserId, 10), types.CacheMaxFansCount)
 
 	// 异步发送关注通知
 	threading.GoSafe(func() {
