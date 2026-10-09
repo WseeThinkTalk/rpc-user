@@ -43,6 +43,14 @@ func atomicAddAndTrimZSet(ctx context.Context, rds *redis.Redis, key string, sco
 	return err
 }
 
+// UpdateFollowCache 更新关注与粉丝缓存（提供给业务逻辑与基准测试调用）
+func UpdateFollowCache(ctx context.Context, rds *redis.Redis, userId, followedUserId int64) error {
+	nowUnix := time.Now().Unix()
+	_ = atomicAddAndTrimZSet(ctx, rds, userFollowKey(userId), nowUnix, strconv.FormatInt(followedUserId, 10), types.CacheMaxFollowCount)
+	_ = atomicAddAndTrimZSet(ctx, rds, userFansKey(followedUserId), nowUnix, strconv.FormatInt(userId, 10), types.CacheMaxFansCount)
+	return nil
+}
+
 type FollowLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
@@ -120,9 +128,7 @@ func (l *FollowLogic) Follow(in *user.FollowRequest) (resp *user.FollowResponse,
 	}
 
 	// 原子更新关注与粉丝缓存（仅当缓存存在时原子追加并修剪，防止残缺冷缓存污染与 3 次 RTT 竞态）
-	nowUnix := time.Now().Unix()
-	_ = atomicAddAndTrimZSet(l.ctx, l.svcCtx.BizRedis, userFollowKey(in.UserId), nowUnix, strconv.FormatInt(in.FollowedUserId, 10), types.CacheMaxFollowCount)
-	_ = atomicAddAndTrimZSet(l.ctx, l.svcCtx.BizRedis, userFansKey(in.FollowedUserId), nowUnix, strconv.FormatInt(in.UserId, 10), types.CacheMaxFansCount)
+	_ = UpdateFollowCache(l.ctx, l.svcCtx.BizRedis, in.UserId, in.FollowedUserId)
 
 	// 异步发送关注通知
 	threading.GoSafe(func() {
